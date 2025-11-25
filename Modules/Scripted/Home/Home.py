@@ -84,6 +84,7 @@ class HomeWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         exemptToolbars = [
             "MainToolBar",
             "ViewToolBar",
+            "ModuleSelectorToolBar",
             *self.toolbarNames,
         ]
         slicer.util.setDataProbeVisible(visible)
@@ -92,8 +93,17 @@ class HomeWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.util.setModulePanelTitleVisible(visible)
         slicer.util.setPythonConsoleVisible(visible)
         slicer.util.setApplicationLogoVisible(visible)
-        keepToolbars = [slicer.util.findChild(slicer.util.mainWindow(), toolbarName) for toolbarName in exemptToolbars]
+        moduleSelectorToolBar = slicer.util.findChild(slicer.util.mainWindow(), "ModuleSelectorToolBar")
+        keepToolbars = [
+            toolbar
+            for toolbar in (slicer.util.findChild(slicer.util.mainWindow(), toolbarName) for toolbarName in exemptToolbars)
+            if toolbar is not None
+        ]
+        if moduleSelectorToolBar and moduleSelectorToolBar not in keepToolbars:
+            keepToolbars.append(moduleSelectorToolBar)
         slicer.util.setToolbarsVisible(visible, keepToolbars)
+        if moduleSelectorToolBar:
+            moduleSelectorToolBar.setVisible(True)
 
     def modifyWindowUI(self):
         """Customize the entire user interface to resemble the custom application"""
