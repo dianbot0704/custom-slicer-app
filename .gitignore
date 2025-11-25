@@ -1,0 +1,75 @@
+# Build artifacts
+/build/
+/build-*/
+_build/
+out/
+dist/
+install/
+install-*/
+compile_commands.json
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+CTestCustom.cmake
+Testing/
+CMakeFiles/
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Compiled objects
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+*.app
+*.ipa
+*.dylib
+*.so
+*.pdb
+*.exp
+
+# Generated Qt/Slicer sources
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+.tox/
+.coverage*
+.sconsign.dblite
+*.log
+*.tmp
+*.cache
+.cache/
+
+# Editor/OS junk
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
