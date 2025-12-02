@@ -1,5 +1,6 @@
 from typing import Optional
 
+import os
 import qt
 import slicer
 import SlicerCustomAppUtilities
@@ -82,11 +83,16 @@ class HomeWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def setSlicerUIVisible(self, visible: bool):
         exemptToolbars = [
-            "MainToolBar",
             "ViewToolBar",
             "ModuleSelectorToolBar",
             *self.toolbarNames,
         ]
+        build_type = currentBuildType()
+        print("build type", build_type)
+        if build_type in ["Debug"]:
+            exemptToolbars.append("ModuleSelectorToolBar")
+        exemptToolbars = exemptToolbars + [*self.toolbarNames]
+
         slicer.util.setDataProbeVisible(visible)
         slicer.util.setMenuBarsVisible(visible, ignore=exemptToolbars)
         slicer.util.setModuleHelpSectionVisible(visible)
@@ -184,3 +190,14 @@ class HomeLogic(ScriptedLoadableModuleLogic):
     """
 
     pass
+
+def currentBuildType() -> str:
+    if slicer.app.intDir:
+        return slicer.app.intDir
+    cache = os.path.join(slicer.app.slicerHome, "CMakeCache.txt")
+    if os.path.exists(cache):
+        for line in open(cache):
+            if line.startswith("CMAKE_BUILD_TYPE:"):
+                return line.split("=", 1)[1].strip()
+    return "Release"
+

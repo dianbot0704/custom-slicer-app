@@ -138,10 +138,9 @@ set(Slicer_QTSCRIPTEDMODULES_DISABLED
 
 # Enable/Disable Slicer custom modules: To create a new module, use the SlicerExtensionWizard.
 set(Slicer_EXTENSION_SOURCE_DIRS
-  #${AIGSlicer_SOURCE_DIR}/Modules/CLI/MyCLIModule
-  #${AIGSlicer_SOURCE_DIR}/Modules/Loadable/MyLoadableModule
+	# Home is the default extension
   ${AIGSlicer_SOURCE_DIR}/Modules/Scripted/Home
-	${AIGSlicer_SOURCE_DIR}/Modules/Scripted/CustomLayout
+	${AIGSlicer_SOURCE_DIR}/Extensions/IntraOperativePlan
   )
 
 # Add remote extension source directories
