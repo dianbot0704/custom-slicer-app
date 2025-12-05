@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EmployeeManagementWindowDark</class>
+ <widget class="QWidget" name="EmployeeManagementWindowDark">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>2078</width>
+    <height>1193</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Patient Case Management (Two Columns)</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+    QWidget {
+        background-color: #282c34;
+        color: #abb2bf;
+    }
+    QLabel {
+        color: #abb2bf;
+    }
+    QPushButton {
+        background-color: #61afef;
+        color: #ffffff;
+        border: 1px solid #61afef;
+        padding: 5px 15px;
+        border-radius: 3px;
+    }
+    QPushButton:hover {
+        background-color: #528cff;
+        border: 1px solid #528cff;
+    }
+    QLineEdit, QComboBox {
+        background-color: #3e4451;
+        color: #abb2bf;
+        border: 1px solid #3e4451;
+        padding: 5px;
+        border-radius: 3px;
+    }
+    QTableWidget {
+        background-color: #21252b;
+        color: #abb2bf;
+        gridline-color: #3e4451;
+        border: 1px solid #3e4451;
+    }
+    QTableWidget::item {
+        padding: 5px;
+    }
+    QHeaderView::section {
+        background-color: #3e4451;
+        color: #abb2bf;
+        padding: 5px;
+        border: 1px solid #3e4451;
+    }
+    QTableWidget::item[text=&quot;ACTIVE&quot;] {
+        background-color: #34495e;
+        color: #2ecc71;
+        border-radius: 3px;
+        padding: 2px 5px;
+    }
+    /* Styles for the new right panel */
+    #rightColumnWidget {
+        background-color: #3e4451; /* Slightly different dark shade for separation */
+        border-left: 1px solid #4b5263;
+    }
+   </string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_main">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_leftColumn">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_header">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_headerText">
+         <item>
+          <widget class="QLabel" name="managementTitleLabel">
+           <property name="font">
+            <font>
+             <pointsize>20</pointsize>
+             <weight>75</weight>
+             <italic>false</italic>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color: #2196F3;</string>
+           </property>
+           <property name="text">
+            <string>Page 1</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_filters"/>
+     </item>
+     <item>
+      <widget class="QTableWidget" name="employeeTableWidget">
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <attribute name="horizontalHeaderVisible">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderStretchLastSection">
+        <bool>true</bool>
+       </attribute>
+       <row/>
+       <row/>
+       <column>
+        <property name="text">
+         <string>Patient Name</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Surgeon</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Imaging</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Case Date</string>
+        </property>
+       </column>
+       <item row="0" column="0">
+        <property name="text">
+         <string>John Doe</string>
+        </property>
+       </item>
+       <item row="0" column="1">
+        <property name="text">
+         <string>Dr. Smith</string>
+        </property>
+       </item>
+       <item row="0" column="2">
+        <property name="text">
+         <string>CT Scan</string>
+        </property>
+       </item>
+       <item row="0" column="3">
+        <property name="text">
+         <string>2025-01-01</string>
+        </property>
+       </item>
+       <item row="1" column="0">
+        <property name="text">
+         <string>Radhiya Ardhana</string>
+        </property>
+       </item>
+       <item row="1" column="1">
+        <property name="text">
+         <string>Dr. Jones</string>
+        </property>
+       </item>
+       <item row="1" column="2">
+        <property name="text">
+         <string>CT Scan</string>
+        </property>
+       </item>
+       <item row="1" column="3">
+        <property name="text">
+         <string>2025-11-13</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_rightColumn">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QLabel" name="label_2">
+         <property name="font">
+          <font>
+           <pointsize>15</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>THIS PAGE CONTAIN MRML</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="pushButton">
+           <property name="text">
+            <string>Previous</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_2">
+           <property name="text">
+            <string>Next</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
