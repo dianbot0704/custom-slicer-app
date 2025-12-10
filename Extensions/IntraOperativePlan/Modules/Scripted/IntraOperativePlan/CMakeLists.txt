@@ -6,6 +6,10 @@ set(MODULE_PYTHON_SCRIPTS
 
 set(MODULE_PYTHON_RESOURCES
 	Resources/UI/PatientManagement.ui
+	Resources/UI/template_page0_no_mrml.ui
+	Resources/UI/template_page1_mrml.ui
+	Resources/UI/template_page2_mrml.ui
+	Resources/UI/template_page3_no_mrml.ui
 )
 
 slicerMacroBuildScriptedModule(
