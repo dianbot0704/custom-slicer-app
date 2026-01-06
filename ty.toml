@@ -1,0 +1,20 @@
+[environment]
+python = "build/python-install"
+extra-paths = [
+	'build/Slicer-build/bin',
+	'build/Slicer-build/bin/Python',
+	'build/Slicer-build/lib/AIGSlicer-5.11/qt-loadable-modules',
+	'build/Slicer-build/lib/AIGSlicer-5.11/qt-loadable-modules/Python',
+	'build/Slicer-build/lib/AIGSlicer-5.11/qt-scripted-modules',
+	'build/python-install/lib/python3.12',
+	'build/python-install/lib/python3.12/lib-dynload',
+	'build/python-install/lib/python3.12/site-packages',
+	'build/VTK-build/lib/python3.12/site-packages',
+	'build/CTK-build/CTK-build/bin/Python',
+	'build/CTK-build/CTK-build/bin',
+	'build/python-install'
+]
+
+[rules]
+possibly-missing-attribute = "ignore"
+unresolved-attribute = "ignore"

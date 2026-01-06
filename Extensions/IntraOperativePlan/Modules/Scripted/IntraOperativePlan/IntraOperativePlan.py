@@ -1,11 +1,11 @@
+import qt
+import slicer
+from pages import Page0, Page1, Page2, Page3
 from slicer.ScriptedLoadableModule import (
     ScriptedLoadableModule,
-    ScriptedLoadableModuleWidget,
     ScriptedLoadableModuleLogic,
+    ScriptedLoadableModuleWidget,
 )
-import slicer
-import qt
-from pages import Page0, Page1, Page2, Page3
 
 CUSTOM_LAYOUT_ID_BASE = 255
 
@@ -32,7 +32,7 @@ class IntraOperativePlanWidget(ScriptedLoadableModuleWidget):
             self.mainLayout = qt.QVBoxLayout(self.parent)
             self.parent.setLayout(self.mainLayout)
 
-        nav_callbacks = dict(on_previous=self._go_to_previous_page, on_next=self._go_to_next_page)
+        nav_callbacks = {"on_previous": self._go_to_previous_page, "on_next": self._go_to_next_page}
         self.page_0 = Page0(resourcePath=self.resourcePath, layout_id=CUSTOM_LAYOUT_ID_BASE + 1, **nav_callbacks)
         self.page_1 = Page1(resourcePath=self.resourcePath, **nav_callbacks)
         self.page_2 = Page2(resourcePath=self.resourcePath, **nav_callbacks)
@@ -63,13 +63,12 @@ class IntraOperativePlanWidget(ScriptedLoadableModuleWidget):
         self._showModulePanel()
 
     def _hideModulePanel(self):
-        if self._modulePanelHidden:
-            return
         mainWindow = slicer.util.mainWindow()
         if mainWindow:
             panel = mainWindow.findChild("QDockWidget", "PanelDockWidget")
             if panel:
                 panel.hide()
+                # Track state but do not use it as a guard so we can hide again if Slicer re-shows the panel.
                 self._modulePanelHidden = True
 
     def _showModulePanel(self):
@@ -110,7 +109,7 @@ class IntraOperativePlanWidget(ScriptedLoadableModuleWidget):
         else:
             if self._dockStack:
                 self._dockStack.hide()
-            self._hideModulePanel()
+            qt.QTimer.singleShot(0, self._hideModulePanel)
 
     def _go_to_next_page(self):
         self._go_to_page_offset(1)
@@ -137,7 +136,7 @@ class IntraOperativePlanLogic(ScriptedLoadableModuleLogic):
 
 
 class PatientManagementLayout(qt.QWidget):
-    def __init__(self, parent=None, resourcePath=None):
+    def __init__(self, resourcePath, parent=None):
         super().__init__(parent)
         ui_widget = slicer.util.loadUI(resourcePath("UI/PatientManagement.ui"))
         layout = qt.QVBoxLayout(self)

@@ -1,6 +1,6 @@
+import os
 from typing import Optional
 
-import os
 import qt
 import slicer
 import SlicerCustomAppUtilities
@@ -102,7 +102,9 @@ class HomeWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         moduleSelectorToolBar = slicer.util.findChild(slicer.util.mainWindow(), "ModuleSelectorToolBar")
         keepToolbars = [
             toolbar
-            for toolbar in (slicer.util.findChild(slicer.util.mainWindow(), toolbarName) for toolbarName in exemptToolbars)
+            for toolbar in (
+                slicer.util.findChild(slicer.util.mainWindow(), toolbarName) for toolbarName in exemptToolbars
+            )
             if toolbar is not None
         ]
         if moduleSelectorToolBar and moduleSelectorToolBar not in keepToolbars:
@@ -191,6 +193,7 @@ class HomeLogic(ScriptedLoadableModuleLogic):
 
     pass
 
+
 def currentBuildType() -> str:
     if slicer.app.intDir:
         return slicer.app.intDir
@@ -200,4 +203,3 @@ def currentBuildType() -> str:
             if line.startswith("CMAKE_BUILD_TYPE:"):
                 return line.split("=", 1)[1].strip()
     return "Release"
-
