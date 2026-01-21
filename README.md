@@ -17,5 +17,22 @@ _List key features_
 
 - [Contributing](CONTRIBUTING.md)
 - [Building](BUILD.md)
+- [AIGCamera source](#aigcamera-source)
+
+## AIGCamera source
+
+The `aigcamera` Python package is pulled from its upstream repo and stored under `Python/`.
+It is not tracked as a submodule yet.
+
+```bash
+mkdir -p Python
+git clone https://github.com/alwint3r/aigcamera Python/aigcamera
+```
+
+To update later:
+
+```bash
+git -C Python/aigcamera pull
+```
 
 ![AIGSlicer by AIG](Applications/AIGSlicerApp/Resources/Images/LogoFull.png?raw=true)

@@ -1,6 +1,6 @@
 # Build and Package AIGSlicer
 
-This document summarizes how to build and package AIGSlicer on Windows.
+This document summarizes how to build and package AIGSlicer on Linux.
 
 AIGSlicer is a custom Slicer application. Reading the [3D Slicer Developer Documentation](https://slicer.readthedocs.io/en/latest/developer_guide/index.html) may help answer additional questions.
 
@@ -8,69 +8,63 @@ The initial source files were created using [KitwareMedical/SlicerCustomAppTempl
 
 ## Prerequisites
 
-- Setting up your git account:
-
-  - Create a [Github](https://github.com) account.
-
-  - Setup your SSH keys following [these](https://help.github.com/articles/generating-ssh-keys) instructions.
-
-  - Setup [your git username](https://help.github.com/articles/setting-your-username-in-git) and [your git email](https://help.github.com/articles/setting-your-email-in-git).
-
-  - If not already done, email `FirstName LastName <firstname.lastname@AIG.com>` to be granted access to
-    the [AIG/AIGSlicer](https://github.com/AIG/AIGSlicer) repository.
+- Install git, CMake, a C++ compiler toolchain, and Qt5.
+- Ensure `Qt5_DIR` points to your Qt5 CMake package (for example: `/path/to/Qt5/lib/cmake/Qt5`).
 
 ## Checkout
 
-1. Start `Git Bash`
-2. Checkout the source code into a directory `C:\W\` by typing the following commands:
-
-```bat
-cd /c
-mkdir W
-cd /c/W
-git clone https://github.com/AIG/AIGSlicer.git A
+```bash
+git clone https://github.com/AIG/AIGSlicer.git
+cd AIGSlicer
 ```
 
-Note: use short source and build directory names to avoid the [maximum path length limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#maximum-path-length-limitation).
+## AIGCamera Python package
+
+The `aigcamera` Python package is a separate repository and must be cloned into
+`Python/aigcamera` before the first configure. It is installed into Slicer's
+embedded Python via the superbuild target `python-aigcamera`.
+
+1. Clone the source into the repository:
+
+```bash
+mkdir -p Python
+git clone https://github.com/alwint3r/aigcamera Python/aigcamera
+```
+
+2. If you already cloned it, update it:
+
+```bash
+git -C Python/aigcamera pull
+```
+
+3. Rebuild only the embedded package after changes:
+
+```bash
+cmake --build build --target python-aigcamera
+```
+
+For multi-config generators, add `--config Release`.
+
+If `pyproject.toml` dependencies change, also rebuild the dependency targets:
+
+```bash
+cmake --build build --target python-hatchling
+cmake --build build --target python-pillow
+```
 
 ## Build
 
-Note: The build process will take approximately 3 hours.
+Note: The build process can take a few hours.
 
-<b>Option 1: CMake GUI and Visual Studio (Recommended)</b>
-
-1. Start [CMake GUI](https://cmake.org/runningcmake/), select source directory `C:\W\A` and set build directory to `C:\W\AR`.
-2. Add an entry `Qt5_DIR` pointing to `C:/Qt/${QT_VERSION}/${COMPILER}/lib/cmake/Qt5`.
-3. Generate the project.
-4. Open `C:\W\AR\AIGSlicer.sln`, select `Release` and build the project.
-
-<b>Option 2: Command Line</b>
-
-1. Start the [Command Line Prompt](http://windows.microsoft.com/en-us/windows/command-prompt-faq)
-2. Configure and build the project in `C:\W\AR` by typing the following commands:
-
-```bat
-cd C:\W\
-mkdir AR
-cd AR
-cmake -G "Visual Studio 17 2022" -A x64 -DQt5_DIR:PATH=`C:/Qt/${QT_VERSION}/${COMPILER}/lib/cmake/Qt5 ..\A
-cmake --build . --config Release -- /maxcpucount:4
+```bash
+cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5 -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
 ## Package
 
-Install [NSIS 2](http://sourceforge.net/projects/nsis/files/)
-
-<b>Option 1: CMake and Visual Studio</b>
-
-1. In the `C:\W\AR\Slicer-build` directory, open `Slicer.sln` and build the `PACKAGE` target
-
-<b>Option 2: Command Line</b>
-
-1. Start the [Command Line Prompt](http://windows.microsoft.com/en-us/windows/command-prompt-faq)
-2. Build the `PACKAGE` target by typing the following commands:
-
-```bat
-cd C:\W\AR\Slicer-build
-cmake --build . --config Release --target PACKAGE
+```bash
+cmake --build build/Slicer-build --target PACKAGE
 ```
+
+For multi-config generators, add `--config Release`.
