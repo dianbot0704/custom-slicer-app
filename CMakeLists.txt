@@ -47,6 +47,9 @@ include(ExternalProjectDependency)
 
 # Additional Slicer dependencies looked up in EXTERNAL_PROJECT_ADDITIONAL_DIR
 set(Slicer_ADDITIONAL_DEPENDENCIES
+	python-hatchling
+	python-pillow
+	python-aigcamera
   )
 
 #  Enable listed remote modules from ITK
