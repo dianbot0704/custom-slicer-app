@@ -141,6 +141,7 @@ set(Slicer_EXTENSION_SOURCE_DIRS
 	# Home is the default extension
   ${AIGSlicer_SOURCE_DIR}/Modules/Scripted/Home
 	${AIGSlicer_SOURCE_DIR}/Extensions/IntraOperativePlan
+	${AIGSlicer_SOURCE_DIR}/Extensions/AIGCameraIntegration
   )
 
 # Add remote extension source directories
