@@ -42,9 +42,13 @@ class AIGCameraController(threading.Thread):
             if ret is ReturnCode.OK:
                 for tool in tools:
                     if tool.tool_name == "tool":
-                        self.tool_info = tool
+                        with self.latest.lock:
+                            self.latest.tool_info = tool
+                            self.latest.ts = time.time()
                     elif tool.tool_name == "drb":
-                        self.ref_info = tool
+                        with self.latest.lock:
+                            self.latest.ref_info = tool
+                            self.latest.ts = time.time()
 
     def stop(self):
         self._stop_evt.set()
@@ -68,6 +72,7 @@ class LiveTransformLogic(ScriptedLoadableModuleLogic):
         self.refToTracker = self.refToTracker or slicer.mrmlScene.AddNewNodeByClass(
             "vtkMRMLTransformNode", "RefToTracker"
         )
+        self.toolToRef = self.toolToRef or slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", "ToolToRef")
 
         self.controller = AIGCameraController(self.latest, api)
         self.controller.start()
@@ -107,18 +112,23 @@ class LiveTransformLogic(ScriptedLoadableModuleLogic):
             self.toolToRef.SetMatrixTransformToParent(toolToRefM)
 
     @staticmethod
+    def _tool_pose_matrix(tool: ToolInfo) -> list[list[float]]:
+        rotation = tool.rotation_matrix
+        translation = tool.translation_vector
+        return [
+            [float(rotation[0]), float(rotation[1]), float(rotation[2]), float(translation[0])],
+            [float(rotation[3]), float(rotation[4]), float(rotation[5]), float(translation[1])],
+            [float(rotation[6]), float(rotation[7]), float(rotation[8]), float(translation[2])],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+
+    @staticmethod
     def _toVtkMatrix(tool: ToolInfo) -> vtk.vtkMatrix4x4:
         M = vtk.vtkMatrix4x4()
-        for r in range(3):
-            for c in range(3):
-                ix = r * 3 + c
-                M.SetElement(r, c, float(tool.rotation_matrix[ix]))
-        for i in range(3):
-            M.SetElement(3, i + 1, float(tool.translation_vector[i]))
-        M.SetElement(0, 3, 0.0)
-        M.SetElement(1, 3, 0.0)
-        M.SetElement(2, 3, 0.0)
-        M.SetElement(3, 3, 1.0)
+        matrix = LiveTransformLogic._tool_pose_matrix(tool)
+        for r in range(4):
+            for c in range(4):
+                M.SetElement(r, c, matrix[r][c])
 
         return M
 
