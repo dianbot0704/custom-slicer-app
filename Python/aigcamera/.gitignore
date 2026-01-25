@@ -1,0 +1,60 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging/build
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# Test/coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type-check/lint caches
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local env
+.env
+.env.*.local
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Temp/cache
+.cache/
+tmp/
+*.tmp
+
+*.so
+*.aimtool
