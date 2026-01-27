@@ -3,4 +3,4 @@ This program is used to detect fiducial markers in medical images using OpenCV a
 
 ## Steps 
 1. Open DICOM file of a patient
-2. Copy this line into 3D Slicer Python Console: exec(open("/home/orto03/VSCode/SlicerTesV3.py").read())
+2. Copy this line into 3D Slicer Python Console: exec(open("file path").read())
