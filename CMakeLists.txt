@@ -52,6 +52,12 @@ set(Slicer_ADDITIONAL_DEPENDENCIES
 	python-aigcamera
   )
 
+option(AIGSlicer_PIN_NUMPY "Pin numpy for AIGSlicer superbuild" ON)
+set(AIGSlicer_NUMPY_VERSION "1.26.4" CACHE STRING "Pinned numpy version for AIGSlicer")
+if(AIGSlicer_PIN_NUMPY)
+  list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-numpy)
+endif()
+
 #  Enable listed remote modules from ITK
 set(Slicer_ITK_ADDITIONAL_MODULES
   )

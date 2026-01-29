@@ -12,6 +12,12 @@ _native/AimPosition312.so
 
 You can rename your file to match, or modify `src/aigcamera/_native_loader.py` to use a different filename.
 
+Alternatively, from the repository root, run:
+
+```
+python setup_aigcamera.py /path/to/aimposition
+```
+
 ## Git
 
 All `.so` files are gitignored. Do not commit native libraries to the repository.

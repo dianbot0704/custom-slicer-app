@@ -138,6 +138,7 @@ class LiveTransformWidget(ScriptedLoadableModuleWidget):
         ScriptedLoadableModuleWidget.__init__(self, parent)
 
     def setup(self):
+        print("LiveTransformWidget setup()")
         ScriptedLoadableModuleWidget.setup(self)
         self.logic = LiveTransformLogic()
         self.aim = AimCamera()
@@ -148,13 +149,16 @@ class LiveTransformWidget(ScriptedLoadableModuleWidget):
         # self.setParameterNode(self._parameterNode)
 
     def cleanup(self):
+        print("LiveTransformWidget cleanup()")
         if hasattr(self, "logic") and self.logic:
             self.logic.stop()
 
     def enter(self):
+        print("LiveTransformWidget enter()")
         if self.logic:
             pass
             # self.setParameterNode(self.logic.getParameterNode())
 
     def exit(self):
+        print("LiveTransformWidget exit()")
         pass
