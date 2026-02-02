@@ -97,3 +97,10 @@ slicerMacroBuildApplication(
   DEFAULT_SETTINGS_FILE Resources/Settings/DefaultSettings.ini
   ${extra_args}
   )
+
+install(
+  DIRECTORY "${Slicer_MAIN_PROJECT_SOURCE_DIR}/AimTools/"
+  DESTINATION "${Slicer_INSTALL_SHARE_DIR}/AimTools"
+  COMPONENT Runtime
+  USE_SOURCE_PERMISSIONS
+  )
