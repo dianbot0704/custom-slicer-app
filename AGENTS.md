@@ -1,5 +1,13 @@
 # Repository Guidelines
 
+## ExecPlans
+ 
+When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+
+To persist your ExecPlan, you can use the .agent directory (alongside the file PLANS.md).
+Do not alter the .agent/PLANS.md file.
+Use a unique name for each of your ExecPlan.
+
 ## Project Structure & Module Organization
 
 - `Applications/`: the custom Slicer application (`AIGSlicerApp`) and its C++/Qt UI code.
