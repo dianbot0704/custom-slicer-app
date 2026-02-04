@@ -53,7 +53,12 @@ set(Slicer_ADDITIONAL_DEPENDENCIES
   )
 
 option(AIGSlicer_PIN_NUMPY "Pin numpy for AIGSlicer superbuild" ON)
-set(AIGSlicer_NUMPY_VERSION "1.26.4" CACHE STRING "Pinned numpy version for AIGSlicer")
+set(AIGSlicer_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for AIGSlicer")
+if(AIGSlicer_PIN_NUMPY)
+  if(NOT AIGSlicer_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
+    message(FATAL_ERROR "AIGSlicer_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AIGSlicer_PIN_NUMPY is ON.")
+  endif()
+endif()
 if(AIGSlicer_PIN_NUMPY)
   list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-numpy)
 endif()
