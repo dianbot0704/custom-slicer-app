@@ -1,4 +1,3 @@
-import os
 from slicer.ScriptedLoadableModule import (
     ScriptedLoadableModule,
     ScriptedLoadableModuleWidget,
@@ -21,6 +20,35 @@ class LiveTransform(ScriptedLoadableModule):
         parent.contributors = [""]
 
 
+def resolve_aimtools_path() -> Path:
+    candidates: list[Path] = []
+    slicer_home = Path(slicer.app.slicerHome)
+    share_dir = slicer_home / "share"
+    app_name = getattr(slicer.app, "applicationName", None)
+    app_version = getattr(slicer.app, "applicationVersion", None)
+    if app_name and app_version:
+        candidates.append(share_dir / f"{app_name}-{app_version}" / "AimTools")
+    if share_dir.is_dir():
+        candidates.extend(sorted(share_dir.glob("*/AimTools")))
+
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "CMakeLists.txt").is_file() and (parent / "AimTools").is_dir():
+            candidates.append(parent / "AimTools")
+            break
+
+    seen: set[Path] = set()
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        if path.is_dir():
+            print(f"found AimTools dir {path}")
+            return path
+
+    tried = "\n".join(str(path) for path in candidates)
+    raise RuntimeError(f"AimTools directory not found. Tried:\n{tried}")
+
+
 class _LatestPoses:
     def __init__(self):
         self.lock = threading.Lock()
@@ -37,18 +65,33 @@ class AIGCameraController(threading.Thread):
         self._stop_evt = threading.Event()
 
     def run(self):
+        ok_counter = 0
+        debug_ok = False
         while not self._stop_evt.is_set():
-            ret, tools = self.api.find_valid_tools(["drb", "tool"], min_match_points=3)
-            if ret is ReturnCode.OK:
-                for tool in tools:
-                    if tool.tool_name == "tool":
-                        with self.latest.lock:
-                            self.latest.tool_info = tool
-                            self.latest.ts = time.time()
-                    elif tool.tool_name == "drb":
-                        with self.latest.lock:
-                            self.latest.ref_info = tool
-                            self.latest.ts = time.time()
+            try:
+                # The tool names are hardcoded in source code.
+                ret, tools = self.api.find_valid_tools(["drb", "tool"], min_match_points=3)
+                if ret is ReturnCode.OK:
+                    for tool in tools:
+                        if tool.tool_name == "tool":
+                            with self.latest.lock:
+                                self.latest.tool_info = tool
+                                self.latest.ts = time.time()
+                        elif tool.tool_name == "drb":
+                            with self.latest.lock:
+                                self.latest.ref_info = tool
+                                self.latest.ts = time.time()
+                        if debug_ok:
+                            if tool.tool_name in ["tool", "drb"]:
+                                ok_counter += 1
+                            if ok_counter % 50 == 0:
+                                print("Tool founds")
+                                ok_counter = 0
+                else:
+                    print(f"api.find_valid_tools() return code is not OK: {ret}")
+            except Exception as e:
+                print(f"AIGCameraController.run() exception caught: {e}")
+        print("AIGCameraController run() finished")
 
     def stop(self):
         self._stop_evt.set()
@@ -91,6 +134,10 @@ class LiveTransformLogic(ScriptedLoadableModuleLogic):
             self.controller = None
 
     def _onTick(self):
+        """
+        Executed on every timer tick.
+        The timer itself is configurable, for now it's default at 60 Hz or every ~16 ms
+        """
         with self.latest.lock:
             tool = self.latest.tool_info
             ref = self.latest.ref_info
@@ -143,7 +190,8 @@ class LiveTransformWidget(ScriptedLoadableModuleWidget):
         self.logic = LiveTransformLogic()
         self.aim = AimCamera()
         self.aim.connect(ConnectionInterface.ETHERNET)
-        self.aim.set_tools_path(Path(os.getcwd()) / "AimTools")
+        tools_path = resolve_aimtools_path()
+        self.aim.set_tools_path(tools_path)
         self.logic.start(self.aim, 60)
         self._parameterNode = self.logic.getParameterNode()
         # self.setParameterNode(self._parameterNode)
