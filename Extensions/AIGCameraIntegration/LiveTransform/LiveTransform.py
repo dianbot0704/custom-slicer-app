@@ -67,22 +67,25 @@ class AIGCameraController(threading.Thread):
     def run(self):
         ok_counter = 0
         debug_ok = False
+        tool_name = "aig_tool"
+        drb_name = "aig_drb"
+        tool_names = [tool_name, drb_name]
         while not self._stop_evt.is_set():
             try:
                 # The tool names are hardcoded in source code.
-                ret, tools = self.api.find_valid_tools(["drb", "tool"], min_match_points=3)
+                ret, tools = self.api.find_valid_tools(tool_names, min_match_points=3)
                 if ret is ReturnCode.OK:
                     for tool in tools:
-                        if tool.tool_name == "tool":
+                        if tool.tool_name == tool_name:
                             with self.latest.lock:
                                 self.latest.tool_info = tool
                                 self.latest.ts = time.time()
-                        elif tool.tool_name == "drb":
+                        elif tool.tool_name == drb_name:
                             with self.latest.lock:
                                 self.latest.ref_info = tool
                                 self.latest.ts = time.time()
                         if debug_ok:
-                            if tool.tool_name in ["tool", "drb"]:
+                            if tool.tool_name in tool_names:
                                 ok_counter += 1
                             if ok_counter % 50 == 0:
                                 print("Tool founds")
