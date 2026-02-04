@@ -156,6 +156,7 @@ set(Slicer_EXTENSION_SOURCE_DIRS
   ${AIGSlicer_SOURCE_DIR}/Modules/Scripted/Home
 	${AIGSlicer_SOURCE_DIR}/Extensions/IntraOperativePlan
 	${AIGSlicer_SOURCE_DIR}/Extensions/AIGCameraIntegration
+	${AIGSlicer_SOURCE_DIR}/Extensions/NavigationTools
   )
 
 # Add remote extension source directories
