@@ -35,6 +35,7 @@ public:
   virtual ~qAIGSlicerAppMainWindow();
 
 public slots:
+  void setHomeModuleCurrent() override;
   void on_HelpAboutAIGSlicerAppAction_triggered();
 
 protected:

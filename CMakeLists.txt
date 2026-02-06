@@ -37,7 +37,7 @@ set(Slicer_ORGANIZATION_DOMAIN "aig.com")
 set(Slicer_ORGANIZATION_NAME   "AIG")
 
 # Default home and favorite modules
-set(Slicer_DEFAULT_HOME_MODULE "Home")
+set(Slicer_DEFAULT_HOME_MODULE "IntraopPlanner")
 set(Slicer_DEFAULT_FAVORITE_MODULES "Data, Volumes, Models, Transforms, Markups, SegmentEditor")
 
 # Configure SuperBuild
@@ -157,6 +157,7 @@ set(Slicer_EXTENSION_SOURCE_DIRS
 	${AIGSlicer_SOURCE_DIR}/Extensions/IntraOperativePlan
 	${AIGSlicer_SOURCE_DIR}/Extensions/AIGCameraIntegration
 	${AIGSlicer_SOURCE_DIR}/Extensions/NavigationTools
+	${AIGSlicer_SOURCE_DIR}/Extensions/SlicerIntraOpPlan
   )
 
 # Add remote extension source directories

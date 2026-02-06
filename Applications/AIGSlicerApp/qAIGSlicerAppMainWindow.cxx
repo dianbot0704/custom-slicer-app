@@ -22,6 +22,7 @@
 // Qt includes
 #include <QDesktopWidget>
 #include <QLabel>
+#include <QTimer>
 
 // Slicer includes
 #include "qSlicerApplication.h"
@@ -57,6 +58,7 @@ void qAIGSlicerAppMainWindowPrivate::init()
 void qAIGSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
 {
   qSlicerApplication * app = qSlicerApplication::application();
+  const QString startupModuleName = QStringLiteral("IntraopPlanner");
 
   //----------------------------------------------------------------------------
   // Add actions
@@ -91,6 +93,24 @@ void qAIGSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
   //this->ViewMenu->setVisible(false);
   //this->LayoutMenu->setVisible(false);
   //this->HelpMenu->setVisible(false);
+
+  // Force startup module selection regardless of persisted user settings.
+  QObject::connect(app, &qSlicerApplication::startupCompleted, mainWindow,
+    [this, startupModuleName]()
+    {
+      if (this->ModuleSelectorToolBar)
+        {
+        this->ModuleSelectorToolBar->selectModule(startupModuleName);
+        }
+    });
+  QTimer::singleShot(0, mainWindow,
+    [this, startupModuleName]()
+    {
+      if (this->ModuleSelectorToolBar)
+        {
+        this->ModuleSelectorToolBar->selectModule(startupModuleName);
+        }
+    });
 }
 
 //-----------------------------------------------------------------------------
@@ -115,6 +135,19 @@ qAIGSlicerAppMainWindow::qAIGSlicerAppMainWindow(
 //-----------------------------------------------------------------------------
 qAIGSlicerAppMainWindow::~qAIGSlicerAppMainWindow()
 {
+}
+
+//-----------------------------------------------------------------------------
+void qAIGSlicerAppMainWindow::setHomeModuleCurrent()
+{
+  Q_D(qAIGSlicerAppMainWindow);
+  const QString startupModuleName = QStringLiteral("IntraopPlanner");
+  if (d->ModuleSelectorToolBar)
+    {
+    d->ModuleSelectorToolBar->selectModule(startupModuleName);
+    return;
+    }
+  this->Superclass::setHomeModuleCurrent();
 }
 
 //-----------------------------------------------------------------------------

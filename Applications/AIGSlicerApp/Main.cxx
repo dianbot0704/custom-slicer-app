@@ -19,6 +19,9 @@
 #include "qAIGSlicerAppMainWindow.h"
 #include "Widgets/qAppStyle.h"
 
+// Qt includes
+#include <QSettings>
+
 // Slicer includes
 #include "qSlicerApplication.h"
 #include "qSlicerApplicationHelper.h"
@@ -27,6 +30,21 @@
 
 namespace
 {
+
+//----------------------------------------------------------------------------
+void ensureStartupHomeModule(QSettings& settings)
+{
+  const QString startupModule = QStringLiteral("IntraopPlanner");
+  const QString configuredHomeModule = settings.value("Modules/HomeModule").toString();
+  // Migrate existing users from previous default values.
+  if (configuredHomeModule.isEmpty()
+    || configuredHomeModule.compare(QStringLiteral("Home"), Qt::CaseInsensitive) == 0
+    || configuredHomeModule == QStringLiteral("IntraOpPlanner"))
+    {
+    settings.setValue("Modules/HomeModule", startupModule);
+    settings.sync();
+    }
+}
 
 //----------------------------------------------------------------------------
 int SlicerAppMain(int argc, char* argv[])
@@ -39,6 +57,13 @@ int SlicerAppMain(int argc, char* argv[])
   if (app.returnCode() != -1)
     {
     return app.returnCode();
+    }
+
+  QSettings userSettings;
+  ensureStartupHomeModule(userSettings);
+  if (QSettings* settings = app.revisionUserSettings())
+    {
+    ensureStartupHomeModule(*settings);
     }
 
   QScopedPointer<SlicerMainWindowType> window;
