@@ -29,7 +29,7 @@
 // CTK includes
 #include <ctkCollapsibleButton.h>
 
-// AIGSlicer includes
+// AksaratorApp includes
 #include "qAppStyle.h"
 
 // --------------------------------------------------------------------------

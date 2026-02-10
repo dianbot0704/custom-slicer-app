@@ -15,8 +15,8 @@
 
 ==============================================================================*/
 
-// AIGSlicer includes
-#include "qAIGSlicerAppMainWindow.h"
+// AksaratorApp includes
+#include "qAksaratorAppMainWindow.h"
 #include "Widgets/qAppStyle.h"
 
 // Qt includes
@@ -49,7 +49,7 @@ void ensureStartupHomeModule(QSettings& settings)
 //----------------------------------------------------------------------------
 int SlicerAppMain(int argc, char* argv[])
 {
-  typedef qAIGSlicerAppMainWindow SlicerMainWindowType;
+  typedef qAksaratorAppMainWindow SlicerMainWindowType;
 
   qSlicerApplicationHelper::preInitializeApplication(argv[0], new qAppStyle);
 

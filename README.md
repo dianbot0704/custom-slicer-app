@@ -1,4 +1,4 @@
-# AIGSlicer by AIG
+# AksaratorApp by Aksarator
 
 Customized version of Slicer
 
@@ -35,4 +35,4 @@ To update later:
 git -C Python/aigcamera pull
 ```
 
-![AIGSlicer by AIG](Applications/AIGSlicerApp/Resources/Images/LogoFull.png?raw=true)
+![AksaratorApp by Aksarator](Applications/AksaratorApp/Resources/Images/LogoFull.png?raw=true)

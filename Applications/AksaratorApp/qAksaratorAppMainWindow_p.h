@@ -15,24 +15,24 @@
 
 ==============================================================================*/
 
-#ifndef __qAIGSlicerAppMainWindow_p_h
-#define __qAIGSlicerAppMainWindow_p_h
+#ifndef __qAksaratorAppMainWindow_p_h
+#define __qAksaratorAppMainWindow_p_h
 
-// AIGSlicer includes
-#include "qAIGSlicerAppMainWindow.h"
+// AksaratorApp includes
+#include "qAksaratorAppMainWindow.h"
 
 // Slicer includes
 #include "qSlicerMainWindow_p.h"
 
 //-----------------------------------------------------------------------------
-class Q_AIGSLICER_APP_EXPORT qAIGSlicerAppMainWindowPrivate
+class Q_AKSARATOR_APP_EXPORT qAksaratorAppMainWindowPrivate
   : public qSlicerMainWindowPrivate
 {
-  Q_DECLARE_PUBLIC(qAIGSlicerAppMainWindow);
+  Q_DECLARE_PUBLIC(qAksaratorAppMainWindow);
 public:
   typedef qSlicerMainWindowPrivate Superclass;
-  qAIGSlicerAppMainWindowPrivate(qAIGSlicerAppMainWindow& object);
-  virtual ~qAIGSlicerAppMainWindowPrivate();
+  qAksaratorAppMainWindowPrivate(qAksaratorAppMainWindow& object);
+  virtual ~qAksaratorAppMainWindowPrivate();
 
   virtual void init();
   /// Reimplemented for custom behavior

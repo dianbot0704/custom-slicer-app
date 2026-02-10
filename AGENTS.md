@@ -10,7 +10,7 @@ Use a unique name for each of your ExecPlan.
 
 ## Project Structure & Module Organization
 
-- `Applications/`: the custom Slicer application (`AIGSlicerApp`) and its C++/Qt UI code.
+- `Applications/`: the custom Slicer application (`AksaratorApp`) and its C++/Qt UI code.
 - `Modules/Scripted/`: in-tree scripted modules (Python + Qt `.ui` + resources).
 - `Extensions/`: Slicer extensions (e.g., `Extensions/IntraOperativePlan/Modules/Scripted/...`).
 - `build/`: *local* CMake/SuperBuild output (ignored by git). Do not edit or commit generated files.
@@ -21,7 +21,7 @@ This repo uses a Slicer SuperBuild driven by CMake (see `BUILD.md` for Windows d
 
 - Configure (example): `cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5`
 - Build: `cmake --build build --config Release`
-- Run (after build): `./build/Slicer-build/AIGSlicer` (launcher) or `./build/Slicer-build/bin/AIGSlicerApp-real`
+- Run (after build): `./build/Slicer-build/AksaratorApp` (launcher) or `./build/Slicer-build/bin/AksaratorApp-real`
 - Package (Windows/NSIS or if enabled): `cmake --build build/Slicer-build --config Release --target PACKAGE`
 
 ## Coding Style & Naming Conventions
@@ -40,7 +40,7 @@ This repo uses a Slicer SuperBuild driven by CMake (see `BUILD.md` for Windows d
 
 - Commit messages follow the repo’s existing “Conventional Commits”-style subjects (e.g., `feat: ...`, `fix: ...`) and must pass the “Commit Message Check” workflow.
 - PRs should include: a clear description, rationale, steps to validate (build/run), and screenshots/gifs for UI changes.
-- When submitting a PR, add a `Cc: @AIGSlicer/developers` comment (see `CONTRIBUTING.md`).
+- When submitting a PR, add a `Cc: @Aksarator/developers` comment (see `CONTRIBUTING.md`).
 
 ## Security & Data
 

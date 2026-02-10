@@ -15,9 +15,9 @@
 
 ==============================================================================*/
 
-// AIGSlicer includes
-#include "qAIGSlicerAppMainWindow.h"
-#include "qAIGSlicerAppMainWindow_p.h"
+// AksaratorApp includes
+#include "qAksaratorAppMainWindow.h"
+#include "qAksaratorAppMainWindow_p.h"
 
 // Qt includes
 #include <QDesktopWidget>
@@ -32,30 +32,30 @@
 #include "qMRMLWidget.h"
 
 //-----------------------------------------------------------------------------
-// qAIGSlicerAppMainWindowPrivate methods
+// qAksaratorAppMainWindowPrivate methods
 
-qAIGSlicerAppMainWindowPrivate::qAIGSlicerAppMainWindowPrivate(qAIGSlicerAppMainWindow& object)
+qAksaratorAppMainWindowPrivate::qAksaratorAppMainWindowPrivate(qAksaratorAppMainWindow& object)
   : Superclass(object)
 {
 }
 
 //-----------------------------------------------------------------------------
-qAIGSlicerAppMainWindowPrivate::~qAIGSlicerAppMainWindowPrivate()
+qAksaratorAppMainWindowPrivate::~qAksaratorAppMainWindowPrivate()
 {
 }
 
 //-----------------------------------------------------------------------------
-void qAIGSlicerAppMainWindowPrivate::init()
+void qAksaratorAppMainWindowPrivate::init()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
   QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
-  Q_Q(qAIGSlicerAppMainWindow);
+  Q_Q(qAksaratorAppMainWindow);
   this->Superclass::init();
 }
 
 //-----------------------------------------------------------------------------
-void qAIGSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
+void qAksaratorAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
 {
   qSlicerApplication * app = qSlicerApplication::application();
   const QString startupModuleName = QStringLiteral("IntraopPlanner");
@@ -64,8 +64,8 @@ void qAIGSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
   // Add actions
   //----------------------------------------------------------------------------
   QAction* helpAboutSlicerAppAction = new QAction(mainWindow);
-  helpAboutSlicerAppAction->setObjectName("HelpAboutAIGSlicerAppAction");
-  helpAboutSlicerAppAction->setText(qAIGSlicerAppMainWindow::tr("About %1").arg(qSlicerApplication::application()->mainApplicationDisplayName()));
+  helpAboutSlicerAppAction->setObjectName("HelpAboutAksaratorAppAction");
+  helpAboutSlicerAppAction->setText(qAksaratorAppMainWindow::tr("About %1").arg(qSlicerApplication::application()->mainApplicationDisplayName()));
 
   //----------------------------------------------------------------------------
   // Calling "setupUi()" after adding the actions above allows the call
@@ -114,33 +114,33 @@ void qAIGSlicerAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
 }
 
 //-----------------------------------------------------------------------------
-// qAIGSlicerAppMainWindow methods
+// qAksaratorAppMainWindow methods
 
 //-----------------------------------------------------------------------------
-qAIGSlicerAppMainWindow::qAIGSlicerAppMainWindow(QWidget* windowParent)
-  : Superclass(new qAIGSlicerAppMainWindowPrivate(*this), windowParent)
+qAksaratorAppMainWindow::qAksaratorAppMainWindow(QWidget* windowParent)
+  : Superclass(new qAksaratorAppMainWindowPrivate(*this), windowParent)
 {
-  Q_D(qAIGSlicerAppMainWindow);
+  Q_D(qAksaratorAppMainWindow);
   d->init();
 }
 
 //-----------------------------------------------------------------------------
-qAIGSlicerAppMainWindow::qAIGSlicerAppMainWindow(
-  qAIGSlicerAppMainWindowPrivate* pimpl, QWidget* windowParent)
+qAksaratorAppMainWindow::qAksaratorAppMainWindow(
+  qAksaratorAppMainWindowPrivate* pimpl, QWidget* windowParent)
   : Superclass(pimpl, windowParent)
 {
   // init() is called by derived class.
 }
 
 //-----------------------------------------------------------------------------
-qAIGSlicerAppMainWindow::~qAIGSlicerAppMainWindow()
+qAksaratorAppMainWindow::~qAksaratorAppMainWindow()
 {
 }
 
 //-----------------------------------------------------------------------------
-void qAIGSlicerAppMainWindow::setHomeModuleCurrent()
+void qAksaratorAppMainWindow::setHomeModuleCurrent()
 {
-  Q_D(qAIGSlicerAppMainWindow);
+  Q_D(qAksaratorAppMainWindow);
   const QString startupModuleName = QStringLiteral("IntraopPlanner");
   if (d->ModuleSelectorToolBar)
     {
@@ -151,7 +151,7 @@ void qAIGSlicerAppMainWindow::setHomeModuleCurrent()
 }
 
 //-----------------------------------------------------------------------------
-void qAIGSlicerAppMainWindow::on_HelpAboutAIGSlicerAppAction_triggered()
+void qAksaratorAppMainWindow::on_HelpAboutAksaratorAppAction_triggered()
 {
   qSlicerAboutDialog about(this);
   about.setLogo(QPixmap(":/Logo.png"));

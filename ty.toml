@@ -3,9 +3,9 @@ python = "build/python-install"
 extra-paths = [
 	'build/Slicer-build/bin',
 	'build/Slicer-build/bin/Python',
-	'build/Slicer-build/lib/AIGSlicer-5.11/qt-loadable-modules',
-	'build/Slicer-build/lib/AIGSlicer-5.11/qt-loadable-modules/Python',
-	'build/Slicer-build/lib/AIGSlicer-5.11/qt-scripted-modules',
+	'build/Slicer-build/lib/AksaratorApp-5.11/qt-loadable-modules',
+	'build/Slicer-build/lib/AksaratorApp-5.11/qt-loadable-modules/Python',
+	'build/Slicer-build/lib/AksaratorApp-5.11/qt-scripted-modules',
 	'build/python-install/lib/python3.12',
 	'build/python-install/lib/python3.12/lib-dynload',
 	'build/python-install/lib/python3.12/site-packages',

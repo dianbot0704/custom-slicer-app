@@ -1,9 +1,9 @@
 
 set(APPLICATION_NAME
-  AIGSlicer
+  AksaratorApp
   )
 set(APPLICATION_DISPLAY_NAME
-  "AIGSlicer"
+  "AksaratorApp"
   )
 
 set(VERSION_MAJOR
@@ -34,5 +34,5 @@ set(WIN_ICON_FILE
   )
 
 set(LICENSE_FILE
-  "${AIGSlicer_SOURCE_DIR}/LICENSE"
+  "${AksaratorApp_SOURCE_DIR}/LICENSE"
   )

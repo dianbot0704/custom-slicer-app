@@ -27,6 +27,7 @@ class IntraOperativePlanWidget(ScriptedLoadableModuleWidget):
         self._modulePanelHidden = False
 
     def setup(self):
+        ScriptedLoadableModuleWidget.setup(self)
         self.mainLayout = self.parent.layout()
         if self.mainLayout is None:
             self.mainLayout = qt.QVBoxLayout(self.parent)

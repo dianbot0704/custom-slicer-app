@@ -1,15 +1,15 @@
-# Contributing to AIGSlicer
+# Contributing to AksaratorApp
 
-There are many ways to contribute to AIGSlicer.
+There are many ways to contribute to AksaratorApp.
 
-- Submit a feature request or bug, or add to the discussion on the [AIGSlicer issue tracker][is]
-- Submit a [Pull Request][pr] to improve AIGSlicer.
+- Submit a feature request or bug, or add to the discussion on the [AksaratorApp issue tracker][is]
+- Submit a [Pull Request][pr] to improve AksaratorApp.
 
 ## The PR Process, and Related Gotchas
 
 ### How to submit a PR ?
 
-If you are new to AIGSlicer development and you don't have push access to the AIGSlicer
+If you are new to AksaratorApp development and you don't have push access to the AksaratorApp
 repository, here are the steps:
 
 1. [Fork and clone][fk] the repository.
@@ -26,8 +26,8 @@ and will facilitate other developers to checkout your topic without having to
 [configure a remote](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
 It will also simplify the workflow when you are _co-developing_ a branch.
 
-When submitting a PR, make sure to add a `Cc: @AIGSlicer/developers` comment to
-notify AIGSlicer developers of your awesome contributions. Based on the
+When submitting a PR, make sure to add a `Cc: @Aksarator/developers` comment to
+notify Aksarator developers of your awesome contributions. Based on the
 comments posted by the reviewers, you may have to revisit your patches.
 
 ### How to integrate a PR ?
@@ -42,7 +42,7 @@ is the checklist:
 
 Next, there are two scenarios:
 
-- You do NOT have push access: A AIGSlicer core developer will integrate your PR.
+- You do NOT have push access: An AksaratorApp core developer will integrate your PR.
 - You have push access: Simply click on the "Merge pull request" button.
 
 Then, click on the "Delete branch" button that appears afterward.

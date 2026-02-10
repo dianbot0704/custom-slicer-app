@@ -16,4 +16,4 @@
 #
 #============================================================================
 
-add_subdirectory(AIGSlicerApp)
+add_subdirectory(AksaratorApp)

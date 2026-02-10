@@ -16,7 +16,7 @@
 #
 #============================================================================
 
-project(AIGSlicerApp)
+project(AksaratorApp)
 
 include(SlicerMacroBuildApplication)
 
@@ -36,14 +36,14 @@ set(${PROJECT_NAME}_FOLDER "App-${PROJECT_NAME}")
 set(APPLIB_NAME "q${PROJECT_NAME}")
 
 set(APPLIB_SRCS
-  qAIGSlicerAppMainWindow.cxx
-  qAIGSlicerAppMainWindow.h
+  qAksaratorAppMainWindow.cxx
+  qAksaratorAppMainWindow.h
   Widgets/qAppStyle.cxx
   Widgets/qAppStyle.h
   )
 
 set(APPLIB_MOC_SRCS
-  qAIGSlicerAppMainWindow.h
+  qAksaratorAppMainWindow.h
   Widgets/qAppStyle.h
   )
 
@@ -59,7 +59,7 @@ slicerMacroBuildAppLibrary(
   DESCRIPTION_SUMMARY ${${PROJECT_NAME}_DESCRIPTION_SUMMARY}
   DESCRIPTION_FILE ${${PROJECT_NAME}_DESCRIPTION_FILE}
   APPLICATION_NAME ${${PROJECT_NAME}_APPLICATION_NAME}
-  EXPORT_DIRECTIVE "Q_AIGSLICER_APP_EXPORT"
+  EXPORT_DIRECTIVE "Q_AKSARATOR_APP_EXPORT"
   FOLDER ${${PROJECT_NAME}_FOLDER}
   SRCS ${APPLIB_SRCS}
   MOC_SRCS ${APPLIB_MOC_SRCS}

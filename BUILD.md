@@ -1,8 +1,8 @@
-# Build and Package AIGSlicer
+# Build and Package AksaratorApp
 
-This document summarizes how to build and package AIGSlicer on Linux.
+This document summarizes how to build and package AksaratorApp on Linux.
 
-AIGSlicer is a custom Slicer application. Reading the [3D Slicer Developer Documentation](https://slicer.readthedocs.io/en/latest/developer_guide/index.html) may help answer additional questions.
+AksaratorApp is a custom Slicer application. Reading the [3D Slicer Developer Documentation](https://slicer.readthedocs.io/en/latest/developer_guide/index.html) may help answer additional questions.
 
 The initial source files were created using [KitwareMedical/SlicerCustomAppTemplate](https://github.com/KitwareMedical/SlicerCustomAppTemplate).
 
@@ -15,7 +15,7 @@ The initial source files were created using [KitwareMedical/SlicerCustomAppTempl
 
 ```bash
 git clone https://github.com/AIG/AIGSlicer.git
-cd AIGSlicer
+cd <repo-directory>
 ```
 
 ## AIGCamera Python package
@@ -60,6 +60,39 @@ Note: The build process can take a few hours.
 cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5 -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
+
+## Fast Python module development loop
+
+For scripted-module development, use the dev launcher instead of rebuilding after
+each Python/UI edit:
+
+```bash
+./scripts/run-aksarator-dev.sh
+```
+
+This launcher:
+
+- starts `build/Slicer-build/AksaratorApp`
+- adds source module paths via `--additional-module-paths`
+- enables Slicer developer mode (`Developer/DeveloperMode=true`)
+- appends those source paths to `Modules/AdditionalPaths` if needed
+
+Inside AksaratorApp, open your scripted module and use `Reload` (or
+`Reload & Test`) in the module panel after edits.
+
+You can verify source loading from the Python console:
+
+```python
+print(slicer.util.modulePath("Home"))
+print(slicer.util.modulePath("IntraOperativePlan"))
+print(slicer.util.modulePath("LiveTransform"))
+```
+
+The printed paths should point to your repository source tree, not
+`build/.../qt-scripted-modules/...`.
+
+Use the normal build loop when you change C++, CMake, or other compiled
+artifacts.
 
 ## Package
 

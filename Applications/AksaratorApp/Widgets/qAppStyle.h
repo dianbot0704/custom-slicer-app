@@ -18,13 +18,13 @@
 #ifndef __qAppStyle_h
 #define __qAppStyle_h
 
-// AIGSlicer includes
-#include "qAIGSlicerAppExport.h"
+// AksaratorApp includes
+#include "qAksaratorAppExport.h"
 
 // Slicer includes
 #include "qSlicerStyle.h"
 
-class Q_AIGSLICER_APP_EXPORT qAppStyle
+class Q_AKSARATOR_APP_EXPORT qAppStyle
   : public qSlicerStyle
 {
   Q_OBJECT

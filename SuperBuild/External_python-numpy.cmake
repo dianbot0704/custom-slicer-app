@@ -24,13 +24,13 @@ if(Slicer_USE_SYSTEM_${proj})
   endforeach()
 endif()
 
-if(AIGSlicer_PIN_NUMPY)
-  if(NOT AIGSlicer_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
-    message(FATAL_ERROR "AIGSlicer_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AIGSlicer_PIN_NUMPY is ON.")
+if(AksaratorApp_PIN_NUMPY)
+  if(NOT AksaratorApp_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
+    message(FATAL_ERROR "AksaratorApp_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AksaratorApp_PIN_NUMPY is ON.")
   endif()
-  set(_aigslicer_numpy_spec "numpy==${AIGSlicer_NUMPY_VERSION}")
+  set(_aksaratorapp_numpy_spec "numpy==${AksaratorApp_NUMPY_VERSION}")
 else()
-  set(_aigslicer_numpy_spec "numpy")
+  set(_aksaratorapp_numpy_spec "numpy")
 endif()
 
 if(NOT Slicer_USE_SYSTEM_${proj})
@@ -41,7 +41,7 @@ if(NOT Slicer_USE_SYSTEM_${proj})
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
-    INSTALL_COMMAND ${PYTHON_EXECUTABLE} -m pip install --no-deps ${_aigslicer_numpy_spec}
+    INSTALL_COMMAND ${PYTHON_EXECUTABLE} -m pip install --no-deps ${_aksaratorapp_numpy_spec}
     LOG_INSTALL 1
     DEPENDS
       ${${proj}_DEPENDENCIES}

@@ -26,15 +26,15 @@ endif()
 set(CMAKE_MODULE_PATH ${slicersources_SOURCE_DIR}/CMake ${CMAKE_MODULE_PATH})
 include(SlicerInitializeOSXVariables)
 
-project(AIGSlicer)
+project(AksaratorApp)
 
 # Configure Application
 set(Slicer_APPLICATIONS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Applications)
-set(Slicer_MAIN_PROJECT "AIGSlicerApp")
+set(Slicer_MAIN_PROJECT "AksaratorApp")
 
 # Set organization
-set(Slicer_ORGANIZATION_DOMAIN "aig.com")
-set(Slicer_ORGANIZATION_NAME   "AIG")
+set(Slicer_ORGANIZATION_DOMAIN "aksarator.com")
+set(Slicer_ORGANIZATION_NAME   "Aksarator")
 
 # Default home and favorite modules
 set(Slicer_DEFAULT_HOME_MODULE "IntraopPlanner")
@@ -52,14 +52,14 @@ set(Slicer_ADDITIONAL_DEPENDENCIES
 	python-aigcamera
   )
 
-option(AIGSlicer_PIN_NUMPY "Pin numpy for AIGSlicer superbuild" ON)
-set(AIGSlicer_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for AIGSlicer")
-if(AIGSlicer_PIN_NUMPY)
-  if(NOT AIGSlicer_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
-    message(FATAL_ERROR "AIGSlicer_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AIGSlicer_PIN_NUMPY is ON.")
+option(AksaratorApp_PIN_NUMPY "Pin numpy for Aksarator superbuild" ON)
+set(AksaratorApp_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for Aksarator")
+if(AksaratorApp_PIN_NUMPY)
+  if(NOT AksaratorApp_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
+    message(FATAL_ERROR "AksaratorApp_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AksaratorApp_PIN_NUMPY is ON.")
   endif()
 endif()
-if(AIGSlicer_PIN_NUMPY)
+if(AksaratorApp_PIN_NUMPY)
   list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-numpy)
 endif()
 
@@ -75,7 +75,7 @@ include(SlicerInitializeReleaseType)
 
 # Set application bundle identifier for macOS
 if(APPLE)
-  set(Slicer_MACOSX_BUNDLE_GUI_IDENTIFIER "com.aig.aigslicer")
+  set(Slicer_MACOSX_BUNDLE_GUI_IDENTIFIER "com.aksarator.aksarator")
 endif()
 
 # Installation folder and admin account requirement for Windows
@@ -153,11 +153,11 @@ set(Slicer_QTSCRIPTEDMODULES_DISABLED
 # Enable/Disable Slicer custom modules: To create a new module, use the SlicerExtensionWizard.
 set(Slicer_EXTENSION_SOURCE_DIRS
 	# Home is the default extension
-  ${AIGSlicer_SOURCE_DIR}/Modules/Scripted/Home
-	${AIGSlicer_SOURCE_DIR}/Extensions/IntraOperativePlan
-	${AIGSlicer_SOURCE_DIR}/Extensions/AIGCameraIntegration
-	${AIGSlicer_SOURCE_DIR}/Extensions/NavigationTools
-	${AIGSlicer_SOURCE_DIR}/Extensions/SlicerIntraOpPlan
+  ${AksaratorApp_SOURCE_DIR}/Modules/Scripted/Home
+	${AksaratorApp_SOURCE_DIR}/Extensions/IntraOperativePlan
+	${AksaratorApp_SOURCE_DIR}/Extensions/AIGCameraIntegration
+	${AksaratorApp_SOURCE_DIR}/Extensions/NavigationTools
+	${AksaratorApp_SOURCE_DIR}/Extensions/SlicerIntraOpPlan
   )
 
 # Add remote extension source directories

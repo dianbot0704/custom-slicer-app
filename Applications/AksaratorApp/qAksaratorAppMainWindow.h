@@ -15,35 +15,35 @@
 
 ==============================================================================*/
 
-#ifndef __qAIGSlicerAppMainWindow_h
-#define __qAIGSlicerAppMainWindow_h
+#ifndef __qAksaratorAppMainWindow_h
+#define __qAksaratorAppMainWindow_h
 
-// AIGSlicer includes
-#include "qAIGSlicerAppExport.h"
-class qAIGSlicerAppMainWindowPrivate;
+// AksaratorApp includes
+#include "qAksaratorAppExport.h"
+class qAksaratorAppMainWindowPrivate;
 
 // Slicer includes
 #include "qSlicerMainWindow.h"
 
-class Q_AIGSLICER_APP_EXPORT qAIGSlicerAppMainWindow : public qSlicerMainWindow
+class Q_AKSARATOR_APP_EXPORT qAksaratorAppMainWindow : public qSlicerMainWindow
 {
   Q_OBJECT
 public:
   typedef qSlicerMainWindow Superclass;
 
-  qAIGSlicerAppMainWindow(QWidget *parent=0);
-  virtual ~qAIGSlicerAppMainWindow();
+  qAksaratorAppMainWindow(QWidget *parent=0);
+  virtual ~qAksaratorAppMainWindow();
 
 public slots:
   void setHomeModuleCurrent() override;
-  void on_HelpAboutAIGSlicerAppAction_triggered();
+  void on_HelpAboutAksaratorAppAction_triggered();
 
 protected:
-  qAIGSlicerAppMainWindow(qAIGSlicerAppMainWindowPrivate* pimpl, QWidget* parent);
+  qAksaratorAppMainWindow(qAksaratorAppMainWindowPrivate* pimpl, QWidget* parent);
 
 private:
-  Q_DECLARE_PRIVATE(qAIGSlicerAppMainWindow);
-  Q_DISABLE_COPY(qAIGSlicerAppMainWindow);
+  Q_DECLARE_PRIVATE(qAksaratorAppMainWindow);
+  Q_DISABLE_COPY(qAksaratorAppMainWindow);
 };
 
 #endif
