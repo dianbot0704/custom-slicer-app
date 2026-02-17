@@ -154,10 +154,10 @@ set(Slicer_QTSCRIPTEDMODULES_DISABLED
 set(Slicer_EXTENSION_SOURCE_DIRS
 	# Home is the default extension
   ${AksaratorApp_SOURCE_DIR}/Modules/Scripted/Home
-	${AksaratorApp_SOURCE_DIR}/Extensions/IntraOperativePlan
-	${AksaratorApp_SOURCE_DIR}/Extensions/AIGCameraIntegration
-	${AksaratorApp_SOURCE_DIR}/Extensions/NavigationTools
-	${AksaratorApp_SOURCE_DIR}/Extensions/SlicerIntraOpPlan
+	# ${AksaratorApp_SOURCE_DIR}/Extensions/IntraOperativePlan
+	# ${AksaratorApp_SOURCE_DIR}/Extensions/AIGCameraIntegration
+	# ${AksaratorApp_SOURCE_DIR}/Extensions/NavigationTools
+	${AksaratorApp_SOURCE_DIR}/Extensions/intraop-plan-extension
   )
 
 # Add remote extension source directories
