@@ -63,6 +63,10 @@ if(AksaratorApp_PIN_NUMPY)
   list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-numpy)
 endif()
 
+option(AksaratorApp_ENABLE_SLICERIGT "Bundle SlicerIGT and SlicerIGSIO extensions" ON)
+set(AksaratorApp_SlicerIGSIO_GIT_TAG "1a89776c9f1c8bbbad62000561aa892afe1e7077" CACHE STRING "Pinned SlicerIGSIO revision for Aksarator")
+set(AksaratorApp_SlicerIGT_GIT_TAG "42091cddf620d760cdb0e22564edb8c55338edd9" CACHE STRING "Pinned SlicerIGT revision for Aksarator")
+
 #  Enable listed remote modules from ITK
 set(Slicer_ITK_ADDITIONAL_MODULES
   )
@@ -174,6 +178,34 @@ FetchContent_Populate(${extension_name}
   )
 message(STATUS "Remote - ${extension_name} [OK]")
 list(APPEND Slicer_EXTENSION_SOURCE_DIRS ${${extension_name}_SOURCE_DIR}/Modules/Scripted/SlicerCustomAppUtilities)
+
+if(AksaratorApp_ENABLE_SLICERIGT)
+  # SlicerIGSIO (required by SlicerIGT)
+  set(extension_name "SlicerIGSIO")
+  set(${extension_name}_SOURCE_DIR "${CMAKE_BINARY_DIR}/${extension_name}")
+  FetchContent_Populate(${extension_name}
+    SOURCE_DIR     ${${extension_name}_SOURCE_DIR}
+    GIT_REPOSITORY ${EP_GIT_PROTOCOL}://github.com/IGSIO/SlicerIGSIO.git
+    GIT_TAG        ${AksaratorApp_SlicerIGSIO_GIT_TAG}
+    GIT_PROGRESS   1
+    QUIET
+    )
+  message(STATUS "Remote - ${extension_name} [OK]")
+  list(APPEND Slicer_EXTENSION_SOURCE_DIRS ${${extension_name}_SOURCE_DIR})
+
+  # SlicerIGT
+  set(extension_name "SlicerIGT")
+  set(${extension_name}_SOURCE_DIR "${CMAKE_BINARY_DIR}/${extension_name}")
+  FetchContent_Populate(${extension_name}
+    SOURCE_DIR     ${${extension_name}_SOURCE_DIR}
+    GIT_REPOSITORY ${EP_GIT_PROTOCOL}://github.com/SlicerIGT/SlicerIGT.git
+    GIT_TAG        ${AksaratorApp_SlicerIGT_GIT_TAG}
+    GIT_PROGRESS   1
+    QUIET
+    )
+  message(STATUS "Remote - ${extension_name} [OK]")
+  list(APPEND Slicer_EXTENSION_SOURCE_DIRS ${${extension_name}_SOURCE_DIR})
+endif()
 
 # SlicerOpenIGTLink
 # set(extension_name "SlicerOpenIGTLink")

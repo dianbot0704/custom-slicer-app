@@ -61,6 +61,13 @@ cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5 -DCMAKE_BUILD_TYPE=Rele
 cmake --build build
 ```
 
+By default, this configure step bundles the `SlicerIGSIO` and `SlicerIGT` extensions.
+To disable that integration (for faster iteration or troubleshooting), add:
+
+```bash
+cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5 -DCMAKE_BUILD_TYPE=Release -DAksaratorApp_ENABLE_SLICERIGT=OFF
+```
+
 ## Fast Python module development loop
 
 For scripted-module development, use the dev launcher instead of rebuilding after
