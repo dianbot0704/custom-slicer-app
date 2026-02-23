@@ -17,6 +17,7 @@ Makefile
 *.ninja
 .ninja_deps
 .ninja_log
+!Python/aigcamera/src/aigcamera/_native/AimPosition312.so
 
 # Compiled objects
 *.o
