@@ -28,6 +28,19 @@ Run the Aim backend demo script (requires `AimTools` and the bundled
 
 ```bash
 uv run python examples/aim_backend_demo.py
+uv run python examples/aim_tool_self_calibration.py
+uv run python examples/aim_tool_tip_calibration.py
+uv run python examples/aim_tool_tip_pivot.py
+```
+
+Tooltip calibration examples support CLI arguments:
+
+- `examples/aim_tool_tip_calibration.py`: `--tools-path`, `--board-tool-name`, `--tool-name`
+- `examples/aim_tool_tip_pivot.py`: `--tools-path`, `--tool-name`
+
+```bash
+uv run python examples/aim_tool_tip_calibration.py --tools-path ./AimTools --board-tool-name cal --tool-name tool
+uv run python examples/aim_tool_tip_pivot.py --tools-path ./AimTools --tool-name tool
 ```
 
 ## Architecture
@@ -207,6 +220,29 @@ cam: CameraProtocol = SimulatedCamera()
 | `get_markers_info()` | Get markers information |
 | `get_tools_path()` | Get the tools directory path |
 | `set_tools_path(path)` | Set the tools directory path |
+
+## Aim Backend Advanced Workflows
+
+`AimCamera` exposes additional calibration and tool workflows that are not part
+of `CameraProtocol`:
+
+| Method | Description |
+|--------|-------------|
+| `tool_create_init(marker_count, tool_name)` | Initialize tool creation |
+| `tool_create_process()` | Advance tool creation progress |
+| `tool_create_finish(save)` | Save or discard tool creation result |
+| `tool_self_calibration_init(tool_name)` | Initialize self-calibration |
+| `tool_self_calibration_process()` | Advance self-calibration progress |
+| `tool_self_calibration_finish(save)` | Save or cancel self-calibration result |
+| `tool_tip_calibration_init(board_tool_name, tool_name)` | Initialize tip calibration with board |
+| `tool_tip_calibration_process()` | Advance tip calibration progress |
+| `tool_tip_calibration_finish(save)` | Save or discard tip calibration result |
+| `tool_tip_pivot_init(tool_name, clear_tip_mid=False)` | Initialize tip pivot calibration |
+| `tool_tip_pivot_process()` | Advance tip pivot calibration progress |
+| `tool_tip_pivot_finish(save)` | Save or discard tip pivot result |
+
+For tool creation and calibration workflows, set acquired data to
+`AcquiredDataType.NONE` or `AcquiredDataType.INFO` before processing.
 
 ## Native Library Loading
 

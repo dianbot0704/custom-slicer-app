@@ -57,5 +57,5 @@ tmp/
 *.tmp
 
 *.so
-!src/aigcamera/_native/AimPosition312.so
 *.aimtool
+!src/aigcamera/_native/AimPosition312.so

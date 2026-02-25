@@ -37,6 +37,27 @@ class _ToolFixProInfo(Protocol):
     MatchError: float
 
 
+class _ToolTipCalProInfo(Protocol):
+    """Protocol describing Aim tooltip calibration progress info."""
+
+    isBoardFind: bool
+    isToolFind: bool
+    isValidCalibrate: bool
+    isCalibrateFinished: bool
+    CalibrateError: float
+    CalibrateRate: float
+    CalRMSError: float
+
+
+class _ToolTipPivotInfo(Protocol):
+    """Protocol describing Aim tooltip pivot progress info."""
+
+    isToolFind: bool
+    isPivotFinished: bool
+    pivotRate: float
+    pivotMeanError: float
+
+
 @dataclass
 class ToolCreationProgress:
     """Progress information for Aim tool creation."""
@@ -55,6 +76,29 @@ class ToolSelfCalibrationProgress:
     valid_calibration_count: int = 0
     finished: bool = False
     match_error: float = 0.0
+
+
+@dataclass
+class ToolTipCalibrationProgress:
+    """Progress information for Aim tooltip calibration with a board."""
+
+    board_found: bool = False
+    tool_found: bool = False
+    valid_calibration: bool = False
+    finished: bool = False
+    calibration_error: float = 0.0
+    progress_rate: float = 0.0
+    rms_error: float = 0.0
+
+
+@dataclass
+class ToolTipPivotProgress:
+    """Progress information for Aim tooltip pivot calibration."""
+
+    tool_found: bool = False
+    finished: bool = False
+    progress_rate: float = 0.0
+    mean_error: float = 0.0
 
 
 class AimCamera:
@@ -84,6 +128,10 @@ class AimCamera:
         self._tool_create_initialized = False
         self._tool_self_cal_info: _ToolFixProInfo | None = None
         self._tool_self_cal_initialized = False
+        self._tool_tip_cal_info: _ToolTipCalProInfo | None = None
+        self._tool_tip_cal_initialized = False
+        self._tool_tip_pivot_info: _ToolTipPivotInfo | None = None
+        self._tool_tip_pivot_initialized = False
 
     def _to_aim_connection_interface(self, interface: ConnectionInterface):
         if interface is ConnectionInterface.ETHERNET:
@@ -881,4 +929,276 @@ class AimCamera:
         return_code = self._from_aim_return_code(ret)
         self._tool_self_cal_info = None
         self._tool_self_cal_initialized = False
+        return return_code
+
+    def tool_tip_calibration_init(
+        self,
+        calibration_board_tool_name: str,
+        tool_name: str,
+    ) -> ReturnCode:
+        """Initialize tooltip calibration with a calibration board and tool.
+
+        Args:
+            calibration_board_tool_name: Registration board tool ID.
+            tool_name: Tool ID whose tip will be calibrated.
+
+        Returns:
+            ReturnCode: Result from Aim_InitToolTipCalibrationWithToolId.
+        """
+        if not self._connected:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.NOT_CONNECTED
+        if self._handle is None:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.INVALID_HANDLE
+        if not self._tool_path_set:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.ERROR
+        if not calibration_board_tool_name or not tool_name:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.ERROR
+
+        ret = self._ap.Aim_InitToolTipCalibrationWithToolId(
+            self._handle,
+            calibration_board_tool_name,
+            tool_name,
+        )
+        return_code = self._from_aim_return_code(ret)
+        if return_code is ReturnCode.OK:
+            self._tool_tip_cal_info = self._ap.t_ToolTipCalProInfo()
+            self._tool_tip_cal_initialized = True
+        else:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+        return return_code
+
+    def tool_tip_calibration_process(
+        self,
+    ) -> tuple[ReturnCode, ToolTipCalibrationProgress]:
+        """Capture markers and advance tooltip calibration progress.
+
+        Returns:
+            tuple[ReturnCode, ToolTipCalibrationProgress]: ReturnCode and progress.
+        """
+        empty_progress = ToolTipCalibrationProgress()
+        if not self._connected:
+            return (ReturnCode.NOT_CONNECTED, empty_progress)
+        if self._handle is None:
+            return (ReturnCode.INVALID_HANDLE, empty_progress)
+        tool_tip_cal_info = self._tool_tip_cal_info
+        if not self._tool_tip_cal_initialized or tool_tip_cal_info is None:
+            return (ReturnCode.ERROR, empty_progress)
+        if self.acquired_data not in (AcquiredDataType.INFO, AcquiredDataType.NONE):
+            return (ReturnCode.STALE_DATA, empty_progress)
+
+        interface = self._to_aim_connection_interface(self.conn_interface)
+        marker_info = self._ap.T_MarkerInfo()
+        status_info = self._ap.T_AimPosStatusInfo()
+        ret = self._ap.Aim_GetMarkerAndStatusFromHardware(
+            self._handle,
+            interface,
+            marker_info,
+            status_info,
+        )
+        attempts = 0
+        while ret == self._ap.AIMOOE_NOT_REFLASH and attempts < 5:
+            time.sleep(0.01)
+            ret = self._ap.Aim_GetMarkerAndStatusFromHardware(
+                self._handle,
+                interface,
+                marker_info,
+                status_info,
+            )
+            attempts += 1
+        return_code = self._from_aim_return_code(ret)
+        if return_code is not ReturnCode.OK:
+            return (return_code, empty_progress)
+
+        ret = self._ap.Aim_ProceedToolTipCalibration(
+            self._handle,
+            marker_info,
+            tool_tip_cal_info,
+        )
+        return_code = self._from_aim_return_code(ret)
+        if return_code is not ReturnCode.OK:
+            return (return_code, empty_progress)
+
+        progress = ToolTipCalibrationProgress(
+            board_found=bool(tool_tip_cal_info.isBoardFind),
+            tool_found=bool(tool_tip_cal_info.isToolFind),
+            valid_calibration=bool(tool_tip_cal_info.isValidCalibrate),
+            finished=bool(tool_tip_cal_info.isCalibrateFinished),
+            calibration_error=float(tool_tip_cal_info.CalibrateError),
+            progress_rate=float(tool_tip_cal_info.CalibrateRate),
+            rms_error=float(tool_tip_cal_info.CalRMSError),
+        )
+        return (ReturnCode.OK, progress)
+
+    def tool_tip_calibration_finish(self, save: bool) -> ReturnCode:
+        """Finalize tooltip calibration and optionally save the result.
+
+        Args:
+            save: Whether to persist the calibrated tooltip data to the tool file.
+
+        Returns:
+            ReturnCode: Save result, or OK when calibration is discarded.
+        """
+        if not self._connected:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.NOT_CONNECTED
+        if self._handle is None:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.INVALID_HANDLE
+        if not self._tool_tip_cal_initialized:
+            self._tool_tip_cal_info = None
+            self._tool_tip_cal_initialized = False
+            return ReturnCode.ERROR
+
+        if save:
+            ret = self._ap.Aim_SaveToolTipCalibration(self._handle)
+            return_code = self._from_aim_return_code(ret)
+        else:
+            return_code = ReturnCode.OK
+        self._tool_tip_cal_info = None
+        self._tool_tip_cal_initialized = False
+        return return_code
+
+    def tool_tip_pivot_init(
+        self,
+        tool_name: str,
+        clear_tip_mid: bool = False,
+    ) -> ReturnCode:
+        """Initialize tooltip pivot calibration for a tool.
+
+        Args:
+            tool_name: Tool ID whose tip will be calibrated by pivoting.
+            clear_tip_mid: Whether to clear existing tip-mid data before pivoting.
+
+        Returns:
+            ReturnCode: Result from Aim_InitToolTipPivotWithToolId.
+        """
+        if not self._connected:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.NOT_CONNECTED
+        if self._handle is None:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.INVALID_HANDLE
+        if not self._tool_path_set:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.ERROR
+        if not tool_name:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.ERROR
+
+        ret = self._ap.Aim_InitToolTipPivotWithToolId(
+            self._handle,
+            tool_name,
+            bool(clear_tip_mid),
+        )
+        return_code = self._from_aim_return_code(ret)
+        if return_code is ReturnCode.OK:
+            self._tool_tip_pivot_info = self._ap.T_ToolTipPivotInfo()
+            self._tool_tip_pivot_initialized = True
+        else:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+        return return_code
+
+    def tool_tip_pivot_process(self) -> tuple[ReturnCode, ToolTipPivotProgress]:
+        """Capture markers and advance tooltip pivot calibration progress.
+
+        Returns:
+            tuple[ReturnCode, ToolTipPivotProgress]: ReturnCode and pivot progress.
+        """
+        empty_progress = ToolTipPivotProgress()
+        if not self._connected:
+            return (ReturnCode.NOT_CONNECTED, empty_progress)
+        if self._handle is None:
+            return (ReturnCode.INVALID_HANDLE, empty_progress)
+        tool_tip_pivot_info = self._tool_tip_pivot_info
+        if not self._tool_tip_pivot_initialized or tool_tip_pivot_info is None:
+            return (ReturnCode.ERROR, empty_progress)
+        if self.acquired_data not in (AcquiredDataType.INFO, AcquiredDataType.NONE):
+            return (ReturnCode.STALE_DATA, empty_progress)
+
+        interface = self._to_aim_connection_interface(self.conn_interface)
+        marker_info = self._ap.T_MarkerInfo()
+        status_info = self._ap.T_AimPosStatusInfo()
+        ret = self._ap.Aim_GetMarkerAndStatusFromHardware(
+            self._handle,
+            interface,
+            marker_info,
+            status_info,
+        )
+        attempts = 0
+        while ret == self._ap.AIMOOE_NOT_REFLASH and attempts < 5:
+            time.sleep(0.01)
+            ret = self._ap.Aim_GetMarkerAndStatusFromHardware(
+                self._handle,
+                interface,
+                marker_info,
+                status_info,
+            )
+            attempts += 1
+        return_code = self._from_aim_return_code(ret)
+        if return_code is not ReturnCode.OK:
+            return (return_code, empty_progress)
+
+        ret = self._ap.Aim_ProceedToolTipPivot(
+            self._handle,
+            marker_info,
+            tool_tip_pivot_info,
+        )
+        return_code = self._from_aim_return_code(ret)
+        if return_code is not ReturnCode.OK:
+            return (return_code, empty_progress)
+
+        progress = ToolTipPivotProgress(
+            tool_found=bool(tool_tip_pivot_info.isToolFind),
+            finished=bool(tool_tip_pivot_info.isPivotFinished),
+            progress_rate=float(tool_tip_pivot_info.pivotRate),
+            mean_error=float(tool_tip_pivot_info.pivotMeanError),
+        )
+        return (ReturnCode.OK, progress)
+
+    def tool_tip_pivot_finish(self, save: bool) -> ReturnCode:
+        """Finalize tooltip pivot calibration and optionally save the result.
+
+        Args:
+            save: Whether to persist the pivot-calibrated tooltip data.
+
+        Returns:
+            ReturnCode: Save result, or OK when calibration is discarded.
+        """
+        if not self._connected:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.NOT_CONNECTED
+        if self._handle is None:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.INVALID_HANDLE
+        if not self._tool_tip_pivot_initialized:
+            self._tool_tip_pivot_info = None
+            self._tool_tip_pivot_initialized = False
+            return ReturnCode.ERROR
+
+        if save:
+            save_cmd = int(self._ap.E_ToolFixRlt.eToolFixSave.value)
+            ret = self._ap.Aim_SaveToolTipPivot(self._handle, save_cmd)
+            return_code = self._from_aim_return_code(ret)
+        else:
+            return_code = ReturnCode.OK
+        self._tool_tip_pivot_info = None
+        self._tool_tip_pivot_initialized = False
         return return_code
