@@ -49,16 +49,30 @@ include(ExternalProjectDependency)
 set(Slicer_ADDITIONAL_DEPENDENCIES
 	python-hatchling
 	python-pillow
+	python-opencv
 	python-aigcamera
   )
 
 option(AksaratorApp_PIN_NUMPY "Pin numpy for Aksarator superbuild" ON)
 set(AksaratorApp_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for Aksarator")
+option(AksaratorApp_PIN_OPENCV "Pin opencv-python-headless for Aksarator superbuild" ON)
+set(AksaratorApp_OPENCV_VERSION "4.11.0.86" CACHE STRING "Pinned opencv-python-headless version for Aksarator")
+
 if(AksaratorApp_PIN_NUMPY)
   if(NOT AksaratorApp_NUMPY_VERSION MATCHES "^1\\.26(\\.|$)")
     message(FATAL_ERROR "AksaratorApp_NUMPY_VERSION must be 1.26.x (e.g. 1.26.4 or 1.26.*) when AksaratorApp_PIN_NUMPY is ON.")
   endif()
 endif()
+
+if(AksaratorApp_PIN_NUMPY AND NOT AksaratorApp_PIN_OPENCV)
+  message(FATAL_ERROR "AksaratorApp_PIN_OPENCV must be ON when AksaratorApp_PIN_NUMPY is ON (NumPy 1.26.x).")
+endif()
+if(AksaratorApp_PIN_NUMPY AND AksaratorApp_PIN_OPENCV)
+  if(NOT AksaratorApp_OPENCV_VERSION MATCHES "^4\\.11(\\.|$)")
+    message(FATAL_ERROR "AksaratorApp_OPENCV_VERSION must be 4.11.x when AksaratorApp_PIN_NUMPY is ON.")
+  endif()
+endif()
+
 if(AksaratorApp_PIN_NUMPY)
   list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-numpy)
 endif()

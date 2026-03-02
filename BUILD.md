@@ -52,6 +52,28 @@ cmake --build build --target python-hatchling
 cmake --build build --target python-pillow
 ```
 
+## OpenCV (`cv2`) Python package
+
+The SuperBuild installs OpenCV into the embedded Python as target
+`python-opencv` using `opencv-python-headless`.
+
+Default pinning keeps it compatible with the default NumPy pin:
+
+- `AksaratorApp_PIN_OPENCV=ON`
+- `AksaratorApp_OPENCV_VERSION=4.11.0.86`
+
+To rebuild only OpenCV in the embedded Python:
+
+```bash
+cmake --build build --target python-opencv
+```
+
+Quick runtime validation:
+
+```bash
+build/python-install/bin/PythonSlicer -c "import cv2, numpy; print(cv2.__version__); print(numpy.__version__)"
+```
+
 ## Build
 
 Note: The build process can take a few hours.
