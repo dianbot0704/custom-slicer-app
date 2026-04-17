@@ -88,6 +88,24 @@ endif()
 option(AksaratorApp_ENABLE_SLICERIGT "Bundle SlicerIGT and SlicerIGSIO extensions" ON)
 set(AksaratorApp_SlicerIGSIO_GIT_TAG "1a89776c9f1c8bbbad62000561aa892afe1e7077" CACHE STRING "Pinned SlicerIGSIO revision for Aksarator")
 set(AksaratorApp_SlicerIGT_GIT_TAG "42091cddf620d760cdb0e22564edb8c55338edd9" CACHE STRING "Pinned SlicerIGT revision for Aksarator")
+set(AksaratorApp_IGSIO_GIT_TAG "581b7f5fc33c1c72dcaa08b306e489ee0d7e6495" CACHE STRING "Pinned IGSIO revision for Aksarator")
+set(AksaratorApp_IGSIO_VTKADDON_GIT_TAG "2ed3e2226cf25958b4dbf8bf917b2f7793ecd6a2" CACHE STRING "Pinned vtkAddon revision used by IGSIO superbuild")
+set(AksaratorApp_YASM_GIT_TAG "a2f8bdf075bcad90a1b0a446080906ef6afe6847" CACHE STRING "Pinned YASM revision for SlicerIGSIO/IGSIO superbuild")
+# SlicerIGSIO's External_IGSIO.cmake reads <CMAKE_PROJECT_NAME>_IGSIO_GIT_TAG.
+set(Slicer_IGSIO_GIT_TAG "${AksaratorApp_IGSIO_GIT_TAG}" CACHE STRING "Pinned IGSIO revision used by Slicer superbuild")
+# SlicerIGSIO's External_YASM.cmake reads <CMAKE_PROJECT_NAME>_YASM_GIT_TAG.
+set(Slicer_YASM_GIT_TAG "${AksaratorApp_YASM_GIT_TAG}" CACHE STRING "Pinned YASM revision used by Slicer superbuild")
+
+# IGSIO superbuild defaults to floating refs for nested deps (vtkAddon main, YASM master).
+# Propagate pinned refs specifically to IGSIO external project configuration.
+set(vtkAddon_GIT_REVISION "${AksaratorApp_IGSIO_VTKADDON_GIT_TAG}")
+set(YASM_GIT_REVISION "${AksaratorApp_YASM_GIT_TAG}")
+mark_as_superbuild(
+  VARS
+    vtkAddon_GIT_REVISION:STRING
+    YASM_GIT_REVISION:STRING
+  PROJECTS IGSIO
+  )
 
 #  Enable listed remote modules from ITK
 set(Slicer_ITK_ADDITIONAL_MODULES
