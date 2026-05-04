@@ -74,3 +74,11 @@ pip-wheel-metadata/
 Thumbs.db
 *.swp
 *.swo
+.serena
+SplashScreenKitware.png
+AIG.png
+.codex
+*.md
+!AGENTS.md
+!BUILD.md
+!README.md
