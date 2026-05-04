@@ -58,7 +58,11 @@ set(AksaratorApp_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for A
 option(AksaratorApp_PIN_OPENCV "Pin opencv-python-headless for Aksarator superbuild" ON)
 set(AksaratorApp_OPENCV_VERSION "4.11.0.86" CACHE STRING "Pinned opencv-python-headless version for Aksarator")
 set(AksaratorApp_NUITKA_VERSION "4.0.1" CACHE STRING "Pinned Nuitka version for Aksarator superbuild")
-option(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR "Compile fiducial_detector.py into a shared library with Nuitka" ON)
+option(
+  AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR
+  "Compile aigcamera Python modules with Nuitka during the build"
+  ON
+  )
 mark_as_superbuild(AksaratorApp_NUITKA_VERSION:STRING)
 mark_as_superbuild(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR:BOOL)
 

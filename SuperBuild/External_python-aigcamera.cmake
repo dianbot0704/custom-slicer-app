@@ -33,13 +33,18 @@ if(Slicer_USE_SYSTEM_${proj})
 endif()
 
 if(NOT Slicer_USE_SYSTEM_${proj})
+  set(_aigcamera_nuitka_compile_args "")
+  if(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR)
+    list(APPEND _aigcamera_nuitka_compile_args --compile-with-nuitka)
+  endif()
+
   ExternalProject_Add(${proj}
     ${${proj}_EP_ARGS}
     DOWNLOAD_COMMAND ""
     SOURCE_DIR ${${proj}_SOURCE_DIR}
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
-    INSTALL_COMMAND ${PYTHON_EXECUTABLE} -m pip install --no-build-isolation --no-deps --force-reinstall --no-cache-dir "${${proj}_SOURCE_DIR}"
+    INSTALL_COMMAND ${PYTHON_EXECUTABLE} ${AksaratorApp_SOURCE_DIR}/scripts/compile_aigcamera_nuitka.py --python-executable ${PYTHON_EXECUTABLE} --source-root ${${proj}_SOURCE_DIR} --build-root ${CMAKE_BINARY_DIR}/python-aigcamera-nuitka --cache-dir ${CMAKE_BINARY_DIR}/python-aigcamera-nuitka-cache ${_aigcamera_nuitka_compile_args}
     LOG_INSTALL 1
     DEPENDS
       ${${proj}_DEPENDENCIES}
