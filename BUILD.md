@@ -45,6 +45,25 @@ cmake --build build --target python-aigcamera
 
 For multi-config generators, add `--config Release`.
 
+When `AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR` is `ON` (the default),
+that target first compiles the `aigcamera` package root into a top-level shared
+library in `site-packages`, then compiles the package submodules into shared
+libraries under `site-packages/aigcamera/`, and removes the source `.py` files
+that would otherwise shadow those binaries.
+
+To verify the built package is coming from the compiled artifact rather than
+the source `.py` file, run:
+
+```bash
+build/python-install/bin/PythonSlicer -c "import aigcamera, aigcamera.backend.aim as aim; print(hasattr(aigcamera, '__compiled__')); print(hasattr(aim, '__compiled__'))"
+```
+
+The command should print `True` twice. On disk, the compiled package root
+should appear as something like
+`build/python-install/lib/python3.12/site-packages/aigcamera.cpython-312-*.so`,
+and the compiled submodule should appear as
+`build/python-install/lib/python3.12/site-packages/aigcamera/backend/aim.cpython-312-*.so`.
+
 If `pyproject.toml` dependencies change, also rebuild the dependency targets:
 
 ```bash

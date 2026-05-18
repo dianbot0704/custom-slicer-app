@@ -11,6 +11,12 @@ set(${proj}_DEPENDENCIES
   python-hatchling
   )
 
+set(_aigcamera_nuitka_compile_args "")
+if(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR)
+  list(APPEND ${proj}_DEPENDENCIES python-nuitka)
+  list(APPEND _aigcamera_nuitka_compile_args --compile-with-nuitka)
+endif()
+
 if(NOT DEFINED Slicer_USE_SYSTEM_${proj})
   set(Slicer_USE_SYSTEM_${proj} ${Slicer_USE_SYSTEM_python})
 endif()
@@ -33,11 +39,6 @@ if(Slicer_USE_SYSTEM_${proj})
 endif()
 
 if(NOT Slicer_USE_SYSTEM_${proj})
-  set(_aigcamera_nuitka_compile_args "")
-  if(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR)
-    list(APPEND _aigcamera_nuitka_compile_args --compile-with-nuitka)
-  endif()
-
   ExternalProject_Add(${proj}
     ${${proj}_EP_ARGS}
     DOWNLOAD_COMMAND ""
