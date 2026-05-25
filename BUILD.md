@@ -46,10 +46,11 @@ cmake --build build --target python-aigcamera
 For multi-config generators, add `--config Release`.
 
 When `AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR` is `ON` (the default),
-that target first compiles the `aigcamera` package root into a top-level shared
-library in `site-packages`, then compiles the package submodules into shared
-libraries under `site-packages/aigcamera/`, and removes the source `.py` files
-that would otherwise shadow those binaries.
+the build compiles both the embedded `aigcamera` package and the
+`Extensions/intraop-plan-extension/TesModule` runtime Python modules with
+Nuitka. The built app stages the intraop planner implementation as shared
+libraries in `qt-scripted-modules`, keeps only bytecode bootstraps for Slicer
+module discovery, and leaves `.ui` assets staged as `.ui` files.
 
 To verify the built package is coming from the compiled artifact rather than
 the source `.py` file, run:
@@ -63,6 +64,22 @@ should appear as something like
 `build/python-install/lib/python3.12/site-packages/aigcamera.cpython-312-*.so`,
 and the compiled submodule should appear as
 `build/python-install/lib/python3.12/site-packages/aigcamera/backend/aim.cpython-312-*.so`.
+
+To rebuild only the intraop planner extension's compiled runtime payload:
+
+```bash
+cmake --build build/Slicer-build --target CompileTesModuleNuitkaModule
+```
+
+To verify the built app is loading the compiled intraop planner payload rather
+than staged source `.py` files, run:
+
+```bash
+./build/Slicer-build/AksaratorApp --no-main-window --disable-cli-modules --python-code "import IntraopPlanner, IntraopPlannerImpl, Core.fiducial_detector as fd; print(IntraopPlanner.__file__); print(hasattr(IntraopPlannerImpl, '__compiled__')); print(hasattr(fd, '__compiled__'))"
+```
+
+The first line should end with `IntraopPlanner.pyc`, and the last two lines
+should both print `True`.
 
 If `pyproject.toml` dependencies change, also rebuild the dependency targets:
 
