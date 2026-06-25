@@ -60,7 +60,7 @@ set(AksaratorApp_OPENCV_VERSION "4.11.0.86" CACHE STRING "Pinned opencv-python-h
 set(AksaratorApp_NUITKA_VERSION "4.0.1" CACHE STRING "Pinned Nuitka version for Aksarator superbuild")
 option(
   AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR
-  "Compile aigcamera Python modules with Nuitka during the build"
+  "Compile the intraop planner extension and aigcamera Python modules with Nuitka during the build"
   ON
   )
 mark_as_superbuild(AksaratorApp_NUITKA_VERSION:STRING)
