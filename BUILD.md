@@ -65,6 +65,14 @@ should appear as something like
 and the compiled submodule should appear as
 `build/python-install/lib/python3.12/site-packages/aigcamera/backend/aim.cpython-312-*.so`.
 
+To clone the separate intraop planner extension repository into the expected
+`Extensions/intraop-plan-extension` path:
+
+```bash
+./build.py ext-clone
+./build.py ext-clone --branch CobaCoba
+```
+
 To rebuild only the intraop planner extension's compiled runtime payload:
 
 ```bash
