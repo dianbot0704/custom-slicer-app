@@ -1,6 +1,6 @@
 # Build AksaratorApp on Windows
 
-> **Status:** The native x64 Release build and application startup have been validated. AimPosition hardware loading still requires Npcap and device validation.
+> **Status:** The native x64 Release build, NSIS packaging, application startup, and AimPosition runtime loading have been validated. Physical camera validation still requires a connected device.
 
 AksaratorApp is a custom 3D Slicer application. Build it as a native 64-bit Windows application rather than through WSL.
 
@@ -43,13 +43,13 @@ cmake --version
 cl
 ```
 
-If the Python launcher is unavailable, this checkout already has a UV-managed host Python that can run `build.py`:
+Select an available host Python executable:
 
 ```powershell
-$HostPython = "C:\Users\aig-rnd02\AppData\Roaming\uv\python\cpython-3.14.4-windows-x86_64-none\python.exe"
+$HostPython = (Get-Command python.exe).Source
 ```
 
-Otherwise, set `$HostPython` to an available host Python executable.
+If Python is not on `PATH`, set `$HostPython` to its absolute path.
 
 ## Fetch the intraoperative planner extension
 
