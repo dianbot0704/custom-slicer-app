@@ -58,12 +58,20 @@ set(AksaratorApp_NUMPY_VERSION "1.26.*" CACHE STRING "Pinned numpy version for A
 option(AksaratorApp_PIN_OPENCV "Pin opencv-python-headless for Aksarator superbuild" ON)
 set(AksaratorApp_OPENCV_VERSION "4.11.0.86" CACHE STRING "Pinned opencv-python-headless version for Aksarator")
 set(AksaratorApp_NUITKA_VERSION "4.0.1" CACHE STRING "Pinned Nuitka version for Aksarator superbuild")
+set(
+  AksaratorApp_AIMPOSITION_ARCHIVE ""
+  CACHE FILEPATH "Optional ZIP archive containing the Windows AimPosition312.pyd runtime"
+  )
+if(AksaratorApp_AIMPOSITION_ARCHIVE AND NOT EXISTS "${AksaratorApp_AIMPOSITION_ARCHIVE}")
+  message(FATAL_ERROR "AksaratorApp_AIMPOSITION_ARCHIVE does not exist: ${AksaratorApp_AIMPOSITION_ARCHIVE}")
+endif()
 option(
   AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR
   "Compile the intraop planner extension and aigcamera Python modules with Nuitka during the build"
   ON
   )
 mark_as_superbuild(AksaratorApp_NUITKA_VERSION:STRING)
+mark_as_superbuild(AksaratorApp_AIMPOSITION_ARCHIVE:FILEPATH)
 mark_as_superbuild(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR:BOOL)
 
 if(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR)
@@ -110,6 +118,19 @@ mark_as_superbuild(
     YASM_GIT_REVISION:STRING
   PROJECTS IGSIO
   )
+
+# IGSIO places its Windows runtime DLLs in the outer superbuild output directory.
+# Make that directory available when launching Slicer modules from the build tree.
+if(WIN32 AND AksaratorApp_ENABLE_SLICERIGT)
+  set(
+    AksaratorApp_IGSIO_LIBRARY_PATHS_LAUNCHER_BUILD
+    "${CMAKE_BINARY_DIR}/bin/<CMAKE_CFG_INTDIR>"
+    )
+  mark_as_superbuild(
+    VARS AksaratorApp_IGSIO_LIBRARY_PATHS_LAUNCHER_BUILD:STRING
+    LABELS "LIBRARY_PATHS_LAUNCHER_BUILD"
+    )
+endif()
 
 #  Enable listed remote modules from ITK
 set(Slicer_ITK_ADDITIONAL_MODULES

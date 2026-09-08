@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    CMake's Visual Studio generator uses the full autogen target name in IntDir.
+    Slicer's deeply nested autogen projects can otherwise exceed MAX_PATH even
+    when the SuperBuild itself has a short path.
+  -->
+  <PropertyGroup Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('_autogen'))">
+    <IntDir>$(AksaratorAppMSBuildIntermediateRoot)\$(ProjectGuid)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+</Project>

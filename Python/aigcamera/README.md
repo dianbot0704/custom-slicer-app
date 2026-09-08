@@ -246,11 +246,16 @@ For tool creation and calibration workflows, set acquired data to
 
 ## Native Library Loading
 
-The Aim backend loads the vendor `AimPosition312.so` from `aigcamera/_native`
-using `importlib` so the module is available as `aigcamera._aimpos`.
+The Aim backend loads the platform-specific vendor extension from `aigcamera/_native`:
 
-- `importlib` registers a real Python module namespace.
-- `ctypes` loads symbols only and does not create a module import target.
+- Linux: `AimPosition312.so`
+- Windows: `AimPosition312.pyd`
+
+The loader uses `importlib` so the extension is available as `aigcamera._aimpos`. On Windows, it adds the package's
+`_native` directory and the standard Npcap installation directory to Python's DLL search path. The Windows extension
+also requires `libusb0.dll` beside the `.pyd` and an Npcap installation that provides `wpcap.dll`.
+
+The native files are proprietary and are staged separately rather than committed with the Python source.
 
 ## Simulated Camera
 

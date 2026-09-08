@@ -17,6 +17,7 @@ DEFAULT_NUMPY_VERSION = "1.26.4"
 EXT_BUILD_TARGET = "CompileTesModuleNuitkaModule"
 INTRAOP_PLAN_EXTENSION_REPOSITORY = "git@github.com:dianbot0704/intraop-plan-extension.git"
 INTRAOP_PLAN_EXTENSION_DIR = Path("Extensions/intraop-plan-extension")
+WINDOWS_MSBUILD_PROPS = Path("scripts/windows-msbuild-short-intermediate.props")
 
 
 def numpy_v1_version(value: str) -> str:
@@ -50,10 +51,10 @@ def print_command(command: list[str]) -> None:
     print(f"$ {shlex.join(command)}", flush=True)
 
 
-def run(command: list[str], *, cwd: Path) -> int:
+def run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> int:
     print_command(command)
     try:
-        return subprocess.run(command, cwd=cwd, check=False).returncode
+        return subprocess.run(command, cwd=cwd, env=env, check=False).returncode
     except FileNotFoundError:
         print(f"error: executable not found: {command[0]}", file=sys.stderr)
         return 127
@@ -77,6 +78,15 @@ def confirm_delete(path: Path) -> bool:
 
 def configure(args: argparse.Namespace, repo_root: Path) -> int:
     build_dir = resolve_build_dir(repo_root, args.build_dir)
+    aimposition_archive: Path | None = None
+    if args.aimposition_archive:
+        aimposition_archive = Path(expand_path_arg(args.aimposition_archive))
+        if not aimposition_archive.is_absolute():
+            aimposition_archive = repo_root / aimposition_archive
+        aimposition_archive = aimposition_archive.resolve()
+        if not aimposition_archive.is_file():
+            print(f"error: AimPosition archive not found: {aimposition_archive}", file=sys.stderr)
+            return 2
 
     if args.fresh and build_dir.exists():
         if not build_dir.is_dir():
@@ -95,6 +105,7 @@ def configure(args: argparse.Namespace, repo_root: Path) -> int:
         ".",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         f"-DSlicer_USE_SYSTEM_OpenSSL={'OFF' if args.no_system_openssl else 'ON'}",
+        f"-DSlicer_BUILD_WEBENGINE_SUPPORT={'OFF' if args.no_webengine else 'ON'}",
         f"-DCMAKE_BUILD_TYPE={args.build_type}",
         "-DAksaratorApp_PIN_NUMPY=ON",
         f"-DAksaratorApp_NUMPY_VERSION={args.numpy_version}",
@@ -102,6 +113,8 @@ def configure(args: argparse.Namespace, repo_root: Path) -> int:
 
     if args.cmake_prefix_path:
         command.append(f"-DCMAKE_PREFIX_PATH={expand_path_arg(args.cmake_prefix_path)}")
+    if aimposition_archive is not None:
+        command.append(f"-DAksaratorApp_AIMPOSITION_ARCHIVE={aimposition_archive}")
 
     return run(command, cwd=repo_root)
 
@@ -113,11 +126,23 @@ def append_build_options(command: list[str], args: argparse.Namespace) -> None:
         command.extend(["--parallel", str(args.parallel)])
 
 
+def build_environment(repo_root: Path, build_dir: Path) -> dict[str, str] | None:
+    if os.name != "nt":
+        return None
+
+    env = os.environ.copy()
+    env["ForceImportBeforeCppTargets"] = str(repo_root / WINDOWS_MSBUILD_PROPS)
+    env["AksaratorAppMSBuildIntermediateRoot"] = str(build_dir / "msbuild-int")
+    return env
+
+
 def build(args: argparse.Namespace, repo_root: Path) -> int:
     build_dir = resolve_build_dir(repo_root, args.build_dir)
     command = [args.cmake, "--build", str(build_dir)]
+    if args.target:
+        command.extend(["--target", args.target])
     append_build_options(command, args)
-    return run(command, cwd=repo_root)
+    return run(command, cwd=repo_root, env=build_environment(repo_root, build_dir))
 
 
 def ext_build(args: argparse.Namespace, repo_root: Path) -> int:
@@ -125,7 +150,7 @@ def ext_build(args: argparse.Namespace, repo_root: Path) -> int:
     slicer_build_dir = build_dir / "Slicer-build"
     command = [args.cmake, "--build", str(slicer_build_dir), "--target", EXT_BUILD_TARGET]
     append_build_options(command, args)
-    return run(command, cwd=repo_root)
+    return run(command, cwd=repo_root, env=build_environment(repo_root, build_dir))
 
 
 def git_capture(git: str, git_args: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -243,6 +268,11 @@ def make_parser() -> argparse.ArgumentParser:
         help="configure with Slicer_USE_SYSTEM_OpenSSL=OFF instead of the default ON",
     )
     configure_parser.add_argument(
+        "--no-webengine",
+        action="store_true",
+        help="configure with Slicer_BUILD_WEBENGINE_SUPPORT=OFF when Qt WebEngine is unavailable",
+    )
+    configure_parser.add_argument(
         "--numpy-version",
         default=DEFAULT_NUMPY_VERSION,
         type=numpy_v1_version,
@@ -253,11 +283,16 @@ def make_parser() -> argparse.ArgumentParser:
         default=DEFAULT_BUILD_TYPE,
         help=f"CMAKE_BUILD_TYPE value for single-config generators (default: {DEFAULT_BUILD_TYPE})",
     )
+    configure_parser.add_argument(
+        "--aimposition-archive",
+        help="optional ZIP archive containing the Windows AimPosition312.pyd runtime",
+    )
     configure_parser.set_defaults(func=configure)
 
     build_parser = subparsers.add_parser("build", help="build the configured project")
     build_parser.add_argument("--config", help="configuration for multi-config generators, e.g. Debug")
     build_parser.add_argument("--parallel", type=positive_int, help="number of parallel build jobs")
+    build_parser.add_argument("--target", help="optional CMake build target, e.g. PACKAGE")
     build_parser.set_defaults(func=build)
 
     ext_build_parser = subparsers.add_parser("ext-build", help="build the compiled intraop planner extension target")

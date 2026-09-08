@@ -1,23 +1,20 @@
 # Native Libraries
 
-This directory is for native shared libraries (`.so` files) required by the Aim backend.
+This directory holds proprietary native artifacts required by the Aim backend.
 
-## Usage
+The loader expects:
 
-Copy your native library file here. By default, the loader expects:
+- Linux: `_native/AimPosition312.so`
+- Windows: `_native/AimPosition312.pyd` and `_native/libusb0.dll`
 
-```
-_native/AimPosition312.so
-```
+On Windows, the AimPosition extension also requires Npcap to provide `wpcap.dll`. The application SuperBuild can
+stage the Windows files directly from the vendor ZIP archive, so they do not need to be copied into this source tree.
+Pass the archive to `build.py configure --aimposition-archive <archive.zip>`.
 
-You can rename your file to match, or modify `src/aigcamera/_native_loader.py` to use a different filename.
+For Linux development, copy the shared object from the repository root with:
 
-Alternatively, from the repository root, run:
-
-```
+```text
 python setup_aigcamera.py /path/to/aimposition
 ```
 
-## Git
-
-All `.so` files are gitignored. Do not commit native libraries to the repository.
+Do not commit proprietary native libraries or vendor archives to the repository.

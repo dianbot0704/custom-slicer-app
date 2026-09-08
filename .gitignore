@@ -1,6 +1,7 @@
 # Build artifacts
 /build/
 /build-*/
+/Extensions/intraop-plan-extension/
 _build/
 out/
 dist/
@@ -35,6 +36,10 @@ Makefile
 *.so
 *.pdb
 *.exp
+
+# Proprietary AimPosition vendor archives
+/6ccc95ac55508c6f4cee9c673a556a25_4615231568702345435_m.zip
+/Win_Py3_2026+FileTambahan.zip
 
 # Generated Qt/Slicer sources
 moc_*.cpp
@@ -81,4 +86,5 @@ AIG.png
 *.md
 !AGENTS.md
 !BUILD.md
+!BUILD_WINDOWS_DRAFT.md
 !README.md

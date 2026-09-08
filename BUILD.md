@@ -1,6 +1,7 @@
 # Build and Package AksaratorApp
 
-This document summarizes how to build and package AksaratorApp on Linux.
+This document summarizes how to build and package AksaratorApp on Linux. For the native Windows workflow, see
+[BUILD_WINDOWS_DRAFT.md](BUILD_WINDOWS_DRAFT.md).
 
 AksaratorApp is a custom Slicer application. Reading the [3D Slicer Developer Documentation](https://slicer.readthedocs.io/en/latest/developer_guide/index.html) may help answer additional questions.
 

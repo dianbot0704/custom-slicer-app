@@ -3,12 +3,19 @@ from __future__ import annotations
 
 import argparse
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
+from zipfile import BadZipFile, ZipFile
 
 NUITKA_OUTPUT_SUFFIXES = {".so", ".pyd", ".dll"}
+WINDOWS_AIMPOSITION_ARTIFACTS = ("AimPosition312.pyd", "libusb0.dll")
+WINDOWS_AIMPOSITION_REQUIRED_MARKERS = (
+    b"API-V3.1.2",
+    b"PyInit_AimPosition",
+    b"python312.dll",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -43,6 +50,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Compile the aigcamera package root and Python modules after installation.",
     )
+    parser.add_argument(
+        "--aimposition-archive",
+        type=Path,
+        help="ZIP archive containing the Windows AimPosition312.pyd and libusb0.dll artifacts.",
+    )
     return parser.parse_args()
 
 
@@ -58,6 +70,47 @@ def installed_site_packages(python_executable: str) -> Path:
     ]
     result = subprocess.run(command, check=True, capture_output=True, text=True)
     return Path(result.stdout.strip())
+
+
+def _find_archive_member(archive: ZipFile, filename: str) -> str:
+    matches = [
+        member.filename
+        for member in archive.infolist()
+        if not member.is_dir() and Path(member.filename).name == filename
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(f"Expected one {filename} in the AimPosition archive, found {len(matches)}")
+    return matches[0]
+
+
+def stage_windows_aimposition_artifacts(archive_path: Path, package_install_root: Path) -> None:
+    """Stage validated Windows AimPosition runtime artifacts into aigcamera."""
+    try:
+        with ZipFile(archive_path) as archive:
+            artifacts = {
+                filename: archive.read(_find_archive_member(archive, filename))
+                for filename in WINDOWS_AIMPOSITION_ARTIFACTS
+            }
+    except BadZipFile as exc:
+        raise RuntimeError(f"Invalid AimPosition ZIP archive: {archive_path}") from exc
+
+    binding = artifacts["AimPosition312.pyd"]
+    missing_markers = [marker.decode() for marker in WINDOWS_AIMPOSITION_REQUIRED_MARKERS if marker not in binding]
+    if missing_markers:
+        raise RuntimeError(
+            "AimPosition312.pyd is incompatible; missing expected markers: " + ", ".join(missing_markers)
+        )
+
+    native_install_root = package_install_root / "_native"
+    native_install_root.mkdir(parents=True, exist_ok=True)
+    for filename, content in artifacts.items():
+        destination = native_install_root / filename
+        destination.write_bytes(content)
+        print(f"Staged Windows AimPosition artifact: {destination}", flush=True)
+
+    incompatible_linux_binding = native_install_root / "AimPosition312.so"
+    if incompatible_linux_binding.exists():
+        incompatible_linux_binding.unlink()
 
 
 def compile_nuitka_artifact(
@@ -97,9 +150,7 @@ def compile_nuitka_artifact(
         if path.is_file() and path.stem.startswith(target_stem) and path.suffix in NUITKA_OUTPUT_SUFFIXES
     ]
     if len(candidates) != 1:
-        raise RuntimeError(
-            f"Expected one compiled artifact for {source_path}, found {len(candidates)}"
-        )
+        raise RuntimeError(f"Expected one compiled artifact for {source_path}, found {len(candidates)}")
     return candidates[0]
 
 
@@ -109,9 +160,12 @@ def main() -> int:
     source_root = args.source_root.resolve()
     build_root = args.build_root.resolve()
     cache_dir = args.cache_dir.resolve()
+    aimposition_archive = args.aimposition_archive.resolve() if args.aimposition_archive else None
 
     if not source_root.is_dir():
         raise SystemExit(f"Source root not found: {source_root}")
+    if aimposition_archive is not None and not aimposition_archive.is_file():
+        raise SystemExit(f"AimPosition archive not found: {aimposition_archive}")
 
     build_root.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -129,11 +183,19 @@ def main() -> int:
     ]
     run_command(install_command)
 
+    site_packages_root = installed_site_packages(python_executable)
+    package_install_root = site_packages_root / "aigcamera"
+    if aimposition_archive is not None:
+        stage_windows_aimposition_artifacts(aimposition_archive, package_install_root)
+    elif sys.platform == "win32":
+        print(
+            "warning: no Windows AimPosition archive was provided; the hardware backend will be unavailable",
+            flush=True,
+        )
+
     if not args.compile_with_nuitka:
         return 0
 
-    site_packages_root = installed_site_packages(python_executable)
-    package_install_root = site_packages_root / "aigcamera"
     package_source_root = source_root / "src" / "aigcamera"
 
     if not package_source_root.is_dir():
