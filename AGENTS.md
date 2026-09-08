@@ -1,28 +1,25 @@
 # Repository Guidelines
 
-## ExecPlans
- 
-When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
-
-To persist your ExecPlan, you can use the .agent directory (alongside the file PLANS.md).
-Do not alter the .agent/PLANS.md file.
-Use a unique name for each of your ExecPlan.
-
 ## Project Structure & Module Organization
 
 - `Applications/`: the custom Slicer application (`AksaratorApp`) and its C++/Qt UI code.
 - `Modules/Scripted/`: in-tree scripted modules (Python + Qt `.ui` + resources).
-- `Extensions/`: Slicer extensions (e.g., `Extensions/IntraOperativePlan/Modules/Scripted/...`).
+- `Extensions/`: Slicer extensions.
 - `build/`: *local* CMake/SuperBuild output (ignored by git). Do not edit or commit generated files.
 
 ## Build, Test, and Development Commands
 
-This repo uses a Slicer SuperBuild driven by CMake (see `BUILD.md` for Windows details).
+This repo uses a CMake-driven Slicer SuperBuild. Prefer the repository's `build.py` helper for common workflows (see `BUILD.md` for details).
 
-- Configure (example): `cmake -S . -B build -DQt5_DIR=/path/to/Qt5/lib/cmake/Qt5`
-- Build: `cmake --build build --config Release`
-- Run (after build): `./build/Slicer-build/AksaratorApp` (launcher) or `./build/Slicer-build/bin/AksaratorApp-real`
-- Package (Windows/NSIS or if enabled): `cmake --build build/Slicer-build --config Release --target PACKAGE`
+- Show available commands and options: `./build.py --help` or `./build.py <command> --help`.
+- Clone or prepare the intraop planner extension: `./build.py ext-clone` (optionally `--branch <branch>`). This uses the extension repository's SSH URL.
+- Configure: `./build.py configure --cmake-prefix-path /path/to/Qt5`. The helper defaults to a Debug build, system OpenSSL, and NumPy 1.26.4.
+- Reconfigure from scratch: `./build.py configure --fresh`; add `--yes` only when intentional deletion of the selected build directory is safe.
+- Build: `./build.py build --parallel <jobs>`; for multi-config generators, add `--config Debug` (or the configured variant).
+- Rebuild the compiled intraop planner extension target: `./build.py ext-build`; it accepts the same `--parallel` and `--config` options as `build`.
+- To use a non-default build tree, put the global option before the command, for example `./build.py --build-dir build-debug configure`.
+- Run (after build): `./build/Slicer-build/AksaratorApp` (launcher) or `./build/Slicer-build/bin/AksaratorApp-real`.
+- Package (Windows/NSIS or if enabled): `cmake --build build/Slicer-build --config Release --target PACKAGE`.
 
 ## Coding Style & Naming Conventions
 
