@@ -37,12 +37,45 @@ Install:
   - MSVC v143 x64/x86 build tools
   - A Windows 10 or Windows 11 SDK
 - Git for Windows
-- Qt 5.15.2 `msvc2019_64`; the validated kit is `C:\Qt\5.15.2\msvc2019_64`
+- uv, used to install `aqtinstall` as an isolated command-line tool
+- Qt 5.15.2 `msvc2019_64`; install it with `aqtinstall` as described below
 - Npcap, required by AimPosition to provide `wpcap.dll`
 - NSIS, only when producing a Windows installer
 
 Use a short build path, such as `C:\b\AksaratorApp`, to reduce Windows path-length risk. The `build.py` helper also
 redirects deeply nested MSBuild autogen intermediates to short paths.
+
+#### Install Qt with `aqtinstall`
+
+Install the validated `aqtinstall` version as a uv tool. This keeps it isolated from the project and system Python
+environments:
+
+```powershell
+uv tool install "aqtinstall==3.3.0"
+uv tool update-shell
+```
+
+Open a new PowerShell session if `aqt` is not immediately available, then verify the tool:
+
+```powershell
+aqt version
+```
+
+Install the 64-bit MSVC 2019 Qt 5.15.2 kit into `C:\Qt`:
+
+```powershell
+aqt install-qt windows desktop 5.15.2 win64_msvc2019_64 -O C:\Qt
+```
+
+The resulting kit is `C:\Qt\5.15.2\msvc2019_64`. Verify its version and CMake package:
+
+```powershell
+& "C:\Qt\5.15.2\msvc2019_64\bin\qmake.exe" -query QT_VERSION
+Test-Path "C:\Qt\5.15.2\msvc2019_64\lib\cmake\Qt5"
+```
+
+The commands should print `5.15.2` and `True`. This installation does not include Qt WebEngine, so use the
+`--no-webengine` configure option shown below.
 
 ## Check out the source
 
