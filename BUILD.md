@@ -33,9 +33,8 @@ Install the required compiler and Qt development packages. Ensure the Qt CMake p
 
 Install:
 
-- Visual Studio 2022 with the **Desktop development with C++** workload, including:
-  - MSVC v143 x64/x86 build tools
-  - A Windows 10 or Windows 11 SDK
+- Visual Studio Build Tools 2022 with the **Desktop development with C++** workload; the full Visual Studio IDE is
+  not required
 - Git for Windows
 - uv, used to install `aqtinstall` as an isolated command-line tool
 - Qt 5.15.2 `msvc2019_64`; install it with `aqtinstall` as described below
@@ -44,6 +43,76 @@ Install:
 
 Use a short build path, such as `C:\b\AksaratorApp`, to reduce Windows path-length risk. The `build.py` helper also
 redirects deeply nested MSBuild autogen intermediates to short paths.
+
+#### Install MSVC Build Tools
+
+Install **Visual Studio Build Tools 2022**, not a Visual Studio IDE edition. This WinGet command installs the C++ build
+tools workload and its recommended components, including MSVC v143, a Windows SDK, MSBuild, and CMake:
+
+```powershell
+winget install --exact --id Microsoft.VisualStudio.2022.BuildTools `
+  --source winget `
+  --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" `
+  --accept-package-agreements `
+  --accept-source-agreements
+```
+
+If Build Tools is already installed, open **Visual Studio Installer**, select **Build Tools 2022**, choose **Modify**,
+and enable the **Desktop development with C++** workload with its recommended components.
+
+#### Configure the PowerShell developer environment
+
+Add an `Import-VsDevEnv` function to the PowerShell profile so a normal PowerShell session can load the x64 compiler
+environment. Create the profile if needed, then open it in Notepad:
+
+```powershell
+$ProfileDirectory = Split-Path -Parent $PROFILE
+New-Item -ItemType Directory -Force -Path $ProfileDirectory | Out-Null
+if (-not (Test-Path $PROFILE)) {
+  New-Item -ItemType File -Path $PROFILE | Out-Null
+}
+notepad.exe $PROFILE
+```
+
+Add this function without removing any existing profile content:
+
+```powershell
+function Import-VsDevEnv {
+  [CmdletBinding()]
+  param()
+
+  $VsWhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+  if (-not (Test-Path $VsWhere)) {
+    throw "vswhere.exe was not found. Install Visual Studio Build Tools 2022."
+  }
+
+  $VsInstallPath = & $VsWhere `
+    -latest `
+    -products Microsoft.VisualStudio.Product.BuildTools `
+    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+    -property installationPath
+  if (-not $VsInstallPath) {
+    throw "Visual Studio Build Tools 2022 with the C++ tools was not found."
+  }
+
+  $DevShellModule = Join-Path $VsInstallPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+  Import-Module $DevShellModule
+  Enter-VsDevShell `
+    -VsInstallPath $VsInstallPath `
+    -SkipAutomaticLocation `
+    -Arch amd64 `
+    -HostArch amd64
+}
+```
+
+Save the profile, open a new PowerShell session, and verify the environment:
+
+```powershell
+Import-VsDevEnv
+cl
+cmake --version
+msbuild -version
+```
 
 #### Install Qt with `aqtinstall`
 
@@ -145,11 +214,13 @@ cmake -S . -B build \
 
 ## Build on Windows
 
-### Prepare Developer PowerShell
+### Prepare PowerShell
 
-Open **Developer PowerShell for VS 2022**, change to the repository, and select the x64 Visual Studio generator:
+Open a normal PowerShell session, import the Build Tools environment from the profile, change to the repository, and
+select the x64 Visual Studio generator:
 
 ```powershell
+Import-VsDevEnv
 cd C:\path\to\AksaratorApp
 $env:CMAKE_GENERATOR = "Visual Studio 17 2022"
 $env:CMAKE_GENERATOR_PLATFORM = "x64"
@@ -351,8 +422,9 @@ contain `lib\cmake\Qt5`.
 
 ### `cl` is not recognized
 
-Run the commands from **Developer PowerShell for VS 2022** or an **x64 Native Tools Command Prompt for VS 2022**.
-Confirm that the Visual Studio C++ workload is installed.
+Run `Import-VsDevEnv` in the current PowerShell session. If the function cannot find the toolchain, use Visual Studio
+Installer to confirm that **Build Tools 2022** has the **Desktop development with C++** workload and recommended
+components installed.
 
 ### The extension clone reports an SSH or access error
 
