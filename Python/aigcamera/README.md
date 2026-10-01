@@ -212,6 +212,8 @@ cam: CameraProtocol = SimulatedCamera()
 | `is_connected()` | Check connection status |
 | `set_acquired_data(data_type)` | Set the type of data to acquire |
 | `set_connection_interface(interface)` | Set the connection interface |
+| `set_ethernet_connect_ip(ip_address)` | Configure the IPv4 destination for future Ethernet connections |
+| `get_ethernet_connect_ip()` | Read the configured Ethernet destination (not the camera's current IP) |
 | `find_tool(name, min_points)` | Find a specific tool |
 | `find_tools(names, min_points)` | Find multiple tools |
 | `find_valid_tools(names, min_points)` | Find multiple valid tools |
@@ -220,6 +222,53 @@ cam: CameraProtocol = SimulatedCamera()
 | `get_markers_info()` | Get markers information |
 | `get_tools_path()` | Get the tools directory path |
 | `set_tools_path(path)` | Set the tools directory path |
+
+## Ethernet Connection Address
+
+The default Ethernet destination is `192.168.31.10`. Configure a different
+address before connecting to a camera that already uses that address:
+
+```python
+from aigcamera.backend.aim import AimCamera
+from aigcamera.types import ConnectionInterface, ReturnCode
+
+cam = AimCamera()
+return_code = cam.set_ethernet_connect_ip("192.168.31.20")
+if return_code is ReturnCode.OK:
+    print(f"Connecting to {cam.get_ethernet_connect_ip()}")
+    return_code = cam.connect(ConnectionInterface.ETHERNET)
+    if return_code is ReturnCode.OK:
+        print("Camera connected successfully!")
+    else:
+        print(f"Connection failed: {return_code.name}")
+    cam.disconnect()
+else:
+    print("Invalid IPv4 address")
+```
+
+Both methods are also available on `SimulatedCamera` and `CameraProtocol`.
+The setter accepts a dotted-decimal IPv4 string. Invalid input, including IPv6
+addresses and hostnames, returns `ReturnCode.ERROR` and leaves the previous
+setting unchanged. The getter returns a string containing the configured
+connection target; it does not query the device.
+
+The setter and getter do not block or make SDK calls. `AimCamera.connect()`
+applies an explicitly configured address using `Aim_SetEthernetConnectIP`
+before opening an Ethernet connection. SDK setup failures are returned by
+`connect()` without attempting to connect. Connection is synchronous and uses
+the SDK's timeout; this API does not expose a timeout override. USB and WiFi
+connections do not apply the Ethernet setting.
+
+The address remains configured after `disconnect()` and is reapplied when
+reconnecting. Setting it while connected changes only the next connection;
+call `disconnect()` and `connect()` to use the new destination. Existing callers
+that do not set an address continue to use the SDK's factory default.
+
+**This API does not change the camera's own IP address.** The SDK has a separate
+`Aim_SetAimPositionIP` operation for that purpose, which writes camera settings
+and requires a camera restart. It is not exposed by this change.
+
+There is currently no committed automated test suite for this package.
 
 ## Aim Backend Advanced Workflows
 

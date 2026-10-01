@@ -1,7 +1,7 @@
+import sys
 from importlib.machinery import ExtensionFileLoader
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-import sys
 from types import ModuleType
 
 _AIMPOS_MODULE_NAME = "aigcamera._aimpos"

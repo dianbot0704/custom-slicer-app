@@ -1,21 +1,24 @@
+from ipaddress import AddressValueError, IPv4Address
 from pathlib import Path
+
 from aigcamera.types import (
-    CameraProtocol,
-    ConnectionInterface,
     AcquiredDataType,
-    ReturnCode,
-    ToolInfo,
+    CameraProtocol,
     CameraStatusInfo,
-    MarkersInfo,
     CollisionStatus,
+    ConnectionInterface,
     HardwareStatus,
     MarkerBGLightStatus,
+    MarkersInfo,
+    ReturnCode,
+    ToolInfo,
 )
 
 
 class SimulatedCamera:
     def __init__(self):
         self.conn_interface = ConnectionInterface.ETHERNET
+        self._ethernet_connect_ip: IPv4Address | None = None
         self.acquired_data = AcquiredDataType.NONE
         self.tools_path = Path("AimTools")
         self._connected = False
@@ -61,6 +64,36 @@ class SimulatedCamera:
 
     def set_connection_interface(self, interface: ConnectionInterface) -> None:
         self.conn_interface = interface
+
+    def set_ethernet_connect_ip(self, ip_address: str) -> ReturnCode:
+        """Configure the IPv4 destination for future Ethernet connections.
+
+        This non-blocking setter retains the address across disconnect and
+        does not affect an existing connection or simulate camera reprogramming.
+
+        Args:
+            ip_address: Dotted-decimal IPv4 address, for example 192.168.31.10.
+
+        Returns:
+            ReturnCode: OK if valid, otherwise ERROR with no configuration change.
+        """
+        if not isinstance(ip_address, str):
+            return ReturnCode.ERROR
+        try:
+            address = IPv4Address(ip_address)
+        except AddressValueError:
+            return ReturnCode.ERROR
+        self._ethernet_connect_ip = address
+        return ReturnCode.OK
+
+    def get_ethernet_connect_ip(self) -> str:
+        """Return the configured destination, defaulting to 192.168.31.10.
+
+        This non-blocking getter reports configuration, not simulated hardware.
+        """
+        if self._ethernet_connect_ip is None:
+            return "192.168.31.10"
+        return str(self._ethernet_connect_ip)
 
     def set_acquired_data(self, acquired_data: AcquiredDataType) -> ReturnCode:
         self.acquired_data = acquired_data

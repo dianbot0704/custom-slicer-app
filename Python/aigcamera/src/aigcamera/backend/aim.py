@@ -1,21 +1,22 @@
+import time
 from dataclasses import dataclass
+from ipaddress import AddressValueError, IPv4Address
 from pathlib import Path
 from typing import Protocol
-import time
 
 from aigcamera._native_loader import load_aimpos
 from aigcamera.types import (
-    ConnectionInterface,
     AcquiredDataType,
+    CameraStatusInfo,
+    CollisionStatus,
+    ConnectionInterface,
+    EdgeWarnings,
+    HardwareStatus,
+    MarkerBGLightStatus,
+    MarkersInfo,
     ReturnCode,
     ToolInfo,
     ToolType,
-    CameraStatusInfo,
-    MarkersInfo,
-    CollisionStatus,
-    HardwareStatus,
-    MarkerBGLightStatus,
-    EdgeWarnings,
 )
 
 
@@ -117,6 +118,7 @@ class AimCamera:
         self._ap = load_aimpos()
 
         self.conn_interface = ConnectionInterface.ETHERNET
+        self._ethernet_connect_ip: IPv4Address | None = None
         self.acquired_data = AcquiredDataType.NONE
         self._tools_path: Path | None = None
         self._tools_path_str: str | None = None
@@ -224,17 +226,36 @@ class AimCamera:
     ) -> ReturnCode:
         """Connect to the Aim device and initialize handles.
 
-        Applies any configured tools path after connecting.
+        Applies the configured Ethernet destination before connecting and any
+        configured tools path after connecting. This synchronous operation
+        uses the SDK's connection timeout; no timeout override is exposed.
 
         Args:
             connection_interface: Optional override for the connection interface.
-                Currently ignored; call set_connection_interface before connect.
 
         Returns:
-            ReturnCode: Result of the connection attempt.
+            ReturnCode: Result of initialization, IP setup, or connection.
+                Failed IP setup prevents the connection attempt.
         """
+        if connection_interface is not None:
+            self.conn_interface = connection_interface
         if self._handle is None:
             self._handle = self._ap.Aim_API_Initial()
+        if self._handle is None:
+            return ReturnCode.INIT_FAILED
+
+        if (
+            self.conn_interface is ConnectionInterface.ETHERNET
+            and self._ethernet_connect_ip is not None
+        ):
+            ret = self._ap.Aim_SetEthernetConnectIP(
+                self._handle, *self._ethernet_connect_ip.packed
+            )
+            return_code = self._from_aim_return_code(ret)
+            if return_code is not ReturnCode.OK:
+                self._connected = False
+                self._tool_path_set = False
+                return return_code
 
         connection_interface = self._to_aim_connection_interface(self.conn_interface)
         ret = self._ap.Aim_ConnectDevice(
@@ -264,6 +285,38 @@ class AimCamera:
             interface: Connection interface such as Ethernet, USB, or WiFi.
         """
         self.conn_interface = interface
+
+    def set_ethernet_connect_ip(self, ip_address: str) -> ReturnCode:
+        """Configure the IPv4 destination for future Ethernet connections.
+
+        This non-blocking setter makes no SDK call. The address is applied by
+        connect and retained across disconnect. It does not reprogram the
+        camera or affect an existing connection.
+
+        Args:
+            ip_address: Dotted-decimal IPv4 address, for example 192.168.31.10.
+
+        Returns:
+            ReturnCode: OK if valid, otherwise ERROR with no configuration change.
+                SDK setup errors are reported by connect.
+        """
+        if not isinstance(ip_address, str):
+            return ReturnCode.ERROR
+        try:
+            address = IPv4Address(ip_address)
+        except AddressValueError:
+            return ReturnCode.ERROR
+        self._ethernet_connect_ip = address
+        return ReturnCode.OK
+
+    def get_ethernet_connect_ip(self) -> str:
+        """Return the configured destination, defaulting to 192.168.31.10.
+
+        This non-blocking getter makes no SDK call and does not query hardware.
+        """
+        if self._ethernet_connect_ip is None:
+            return "192.168.31.10"
+        return str(self._ethernet_connect_ip)
 
     def set_acquired_data(self, acquired_data: AcquiredDataType) -> ReturnCode:
         """Configure which data types the Aim backend should acquire.
@@ -732,8 +785,7 @@ class AimCamera:
             return (return_code, empty_info)
 
         marker_count = int(marker_info.MarkerNumber)
-        if marker_count < 0:
-            marker_count = 0
+        marker_count = max(marker_count, 0)
         marker_coordinates = [
             float(marker_info.MarkerCoordinate[index])
             for index in range(marker_count * 3)

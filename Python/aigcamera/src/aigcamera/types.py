@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
 from pathlib import Path
+from typing import Protocol
 
 
 class ConnectionInterface(Enum):
@@ -118,6 +118,22 @@ class CameraProtocol(Protocol):
     ) -> ReturnCode: ...
     def set_acquired_data(self, acquired_data: AcquiredDataType) -> ReturnCode: ...
     def set_connection_interface(self, interface: ConnectionInterface) -> None: ...
+    def set_ethernet_connect_ip(self, ip_address: str) -> ReturnCode:
+        """Set the IPv4 destination for future Ethernet connections.
+
+        Return OK for a valid dotted-decimal IPv4 string, otherwise ERROR.
+        Invalid input leaves the previous setting unchanged. This does not
+        change the camera's own IP address or an existing connection.
+        """
+        ...
+
+    def get_ethernet_connect_ip(self) -> str:
+        """Return the configured destination, defaulting to 192.168.31.10.
+
+        This reports configuration for future connections, not hardware state.
+        """
+        ...
+
     def disconnect(self) -> ReturnCode: ...
     def is_connected(self) -> bool: ...
     def find_tool(
