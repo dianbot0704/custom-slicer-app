@@ -17,7 +17,16 @@ _List key features_
 
 - [Contributing](CONTRIBUTING.md)
 - [Building](BUILD.md)
+- [Automated application verification](scripts/verification/README.md)
 - [AIGCamera source](#aigcamera-source)
+
+After building on Linux, run the UI smoke check without manual navigation:
+
+```bash
+./scripts/verify-app.py
+```
+
+The check uses synthetic data and isolated settings. It produces an HTML report, JSON results, screenshots, and logs under `out/verification/`. Camera and DICOM connections are disabled. See the [verification guide](scripts/verification/README.md) for coverage and limits.
 
 ## AIGCamera source
 
