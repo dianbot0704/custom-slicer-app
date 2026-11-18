@@ -7,7 +7,7 @@ import json
 import os
 import time
 import traceback
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,18 +17,22 @@ import slicer
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 
-OUTPUT = Path(os.environ["AKSARATOR_VERIFY_OUTPUT"])
-SANDBOX = Path(os.environ["AKSARATOR_VERIFY_SANDBOX"])
-REPORT = {"run_id": os.environ["AKSARATOR_VERIFY_RUN_ID"], "completed": False, "checks": [], "runtime": {}}
+OUTPUT_DIR = Path(os.environ["AKSARATOR_VERIFY_OUTPUT"])
+SANDBOX_DIR = Path(os.environ["AKSARATOR_VERIFY_SANDBOX"])
+SCENARIO_REPORT = {"run_id": os.environ["AKSARATOR_VERIFY_RUN_ID"], "completed": False, "checks": [], "runtime": {}}
+
+GENERAL_ACCESS_PIN = "000000"
+REJECTED_PIN = "999999"
 
 
 def save_report() -> None:
-    temporary = OUTPUT / "scenario.json.tmp"
-    temporary.write_text(json.dumps(REPORT, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(OUTPUT / "scenario.json")
+    checkpoint_path = OUTPUT_DIR / "scenario.json"
+    temporary_path = checkpoint_path.with_suffix(".json.tmp")
+    temporary_path.write_text(json.dumps(SCENARIO_REPORT, indent=2) + "\n", encoding="utf-8")
+    temporary_path.replace(checkpoint_path)
 
 
-def wait_for(predicate, description: str, timeout: float = 10.0) -> None:  # noqa: ANN001
+def wait_for(predicate: Callable[[], bool], description: str, timeout: float = 10.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         slicer.app.processEvents()
@@ -41,8 +45,8 @@ def wait_for(predicate, description: str, timeout: float = 10.0) -> None:  # noq
 def screenshot(name: str) -> str:
     slicer.app.processEvents()
     filename = f"{name}.png"
-    image = slicer.util.mainWindow().grab()
-    if image.isNull() or not image.save(str(OUTPUT / filename), "PNG"):
+    window_image = slicer.util.mainWindow().grab()
+    if window_image.isNull() or not window_image.save(str(OUTPUT_DIR / filename), "PNG"):
         raise RuntimeError(f"Could not save {filename}")
     return filename
 
@@ -50,7 +54,7 @@ def screenshot(name: str) -> str:
 @contextmanager
 def check(name: str) -> Iterator[dict]:
     entry = {"name": name, "status": "running"}
-    REPORT["checks"].append(entry)
+    SCENARIO_REPORT["checks"].append(entry)
     save_report()
     start = time.monotonic()
     try:
@@ -71,25 +75,44 @@ def check(name: str) -> Iterator[dict]:
         save_report()
 
 
-def click(widget) -> None:  # noqa: ANN001
-    assert widget is not None, "Button is missing"
-    assert widget.isVisible(), f"Button is not visible: {widget.objectName}"
-    assert widget.isEnabled(), f"Button is disabled: {widget.objectName}"
-    widget.click()
+def click(button: qt.QPushButton) -> None:
+    assert button is not None, "Button is missing"
+    assert button.isVisible(), f"Button is not visible: {button.objectName}"
+    assert button.isEnabled(), f"Button is disabled: {button.objectName}"
+    button.click()
     slicer.app.processEvents()
 
 
-def enter_pin(page, pin: str) -> None:  # noqa: ANN001
+def enter_pin(page: qt.QWidget, pin: str) -> None:
     buttons = slicer.util.findChildren(page, name="pinKey")
-    keys = {str(button.text): button for button in buttons}
+    digit_buttons = {str(button.text): button for button in buttons}
     for digit in pin:
-        assert digit in keys, f"PIN key {digit} is missing"
-        click(keys[digit])
+        assert digit in digit_buttons, f"PIN key {digit} is missing"
+        click(digit_buttons[digit])
 
 
-def expect_page(widget, page) -> None:  # noqa: ANN001
-    wait_for(lambda: widget.ui.pagesStackedWidget.currentWidget() == page, f"page {page.objectName}")
+def expect_page(module_widget, page: qt.QWidget) -> None:  # noqa: ANN001
+    page_stack = module_widget.ui.pagesStackedWidget
+    wait_for(lambda: page_stack.currentWidget() == page, f"page {page.objectName}")
     assert page.isVisible(), f"Active page is hidden: {page.objectName}"
+
+
+def click_to_page(module_widget, button: qt.QPushButton, page: qt.QWidget) -> None:  # noqa: ANN001
+    """Click a visible, enabled button and verify the resulting page."""
+    click(button)
+    expect_page(module_widget, page)
+
+
+def expect_forward_blocked(
+    module_widget,  # noqa: ANN001 - Slicer's dynamically loaded IntraopPlannerWidget
+    next_button: qt.QPushButton,
+    page: qt.QWidget,
+    reason: str,
+) -> None:
+    """A disabled Next button must also leave the current page unchanged."""
+    assert not next_button.isEnabled(), reason
+    next_button.click()
+    expect_page(module_widget, page)
 
 
 def run() -> None:  # noqa: PLR0915
@@ -97,7 +120,7 @@ def run() -> None:  # noqa: PLR0915
         # Do not select the module here: startup must have selected it itself.
         wait_for(lambda: slicer.util.selectedModule() == "IntraopPlanner", "default IntraopPlanner selection")
         module_path = Path(slicer.util.modulePath("IntraopPlanner")).resolve()
-        assert module_path.parent == SANDBOX / "module", f"Wrong runtime selected: {module_path}"
+        assert module_path.parent == SANDBOX_DIR / "module", f"Wrong runtime selected: {module_path}"
         import verification_support as ui_fixtures  # noqa: PLC0415 - verify sandbox selection before import
         from Runtime import IntraopPlannerImpl as runtime  # noqa: PLC0415
 
@@ -127,7 +150,7 @@ def run() -> None:  # noqa: PLR0915
         assert len(widget._pageHeaders) == 6, "Not all workflow pages have navigation headers"
         assert widget.registrationManager.patient_database.get_all_patients() == []
         assert getattr(slicer, "dicomDatabase", None) is None, "DICOM database unexpectedly initialized"
-        REPORT["runtime"] = {
+        SCENARIO_REPORT["runtime"] = {
             "application_version": str(slicer.app.applicationVersion),
             "python_runtime": str(runtime.__file__),
             "compiled_runtime": any(Path(runtime.__file__).parent.glob("IntraopPlannerImpl*.so")),
@@ -139,15 +162,14 @@ def run() -> None:  # noqa: PLR0915
             raise RuntimeError("Intentional verification failure (--force-failure)")
 
     with check("general-pin-reject-and-cancel"):
-        click(widget.splashWidget.findChild(qt.QPushButton, "startButton"))
-        expect_page(widget, widget.generalPinWidget)
-        enter_pin(widget.generalPinWidget, "999999")
+        start_button = widget.splashWidget.findChild(qt.QPushButton, "startButton")
+        click_to_page(widget, start_button, widget.generalPinWidget)
+        enter_pin(widget.generalPinWidget, REJECTED_PIN)
         expect_page(widget, widget.generalPinWidget)
         assert "Wrong PIN" in widget.generalPinStep.ui.pinErrorLabel.text
         assert widget.generalPinStep.ui.pinInput.text == "", "Rejected PIN was not cleared"
         screenshot("general-pin-rejected")
-        click(widget.generalPinStep.ui.pinBackButton)
-        expect_page(widget, widget.splashWidget)
+        click_to_page(widget, widget.generalPinStep.ui.pinBackButton, widget.splashWidget)
 
     for target, page, header in (
         ("patient", widget.patientSettingsWidget, widget.patientSettingsHeader),
@@ -156,17 +178,16 @@ def run() -> None:  # noqa: PLR0915
         with check(f"{target}-settings-pin-and-return"):
             click(widget.splashWidget.findChild(qt.QPushButton, "settingsButton"))
             menu = widget.splashStep.settingsMenu
-            click(menu.patientSettingsRow if target == "patient" else menu.surgeonSettingsRow)
-            expect_page(widget, widget.generalPinWidget)
-            enter_pin(widget.generalPinWidget, "000000")
+            settings_row = menu.patientSettingsRow if target == "patient" else menu.surgeonSettingsRow
+            click_to_page(widget, settings_row, widget.generalPinWidget)
+            enter_pin(widget.generalPinWidget, GENERAL_ACCESS_PIN)
             expect_page(widget, page)
             screenshot(f"{target}-settings-page")
-            click(header.backButton)
-            expect_page(widget, widget.splashWidget)
+            click_to_page(widget, header.backButton, widget.splashWidget)
 
     with check("surgeon-picker-search"):
         click(widget.splashWidget.findChild(qt.QPushButton, "startButton"))
-        enter_pin(widget.generalPinWidget, "000000")
+        enter_pin(widget.generalPinWidget, GENERAL_ACCESS_PIN)
         expect_page(widget, widget.preloginWidget)
         search = widget.preloginStep.ui.searchSurgeonInput
         search.setText("no-matching-account")
@@ -176,12 +197,11 @@ def run() -> None:  # noqa: PLR0915
         slicer.app.processEvents()
         cards = slicer.util.findChildren(widget.preloginWidget, name="surgeonCard")
         assert len(cards) == 1, "Synthetic account not found"
-        click(cards[0])
-        expect_page(widget, widget.loginWidget)
+        click_to_page(widget, cards[0], widget.loginWidget)
         assert widget.loginStep.ui.loginNameLabel.text == "Automation User"
 
     with check("surgeon-pin-reject"):
-        enter_pin(widget.loginWidget, "999999")
+        enter_pin(widget.loginWidget, REJECTED_PIN)
         expect_page(widget, widget.loginWidget)
         assert "Wrong PIN" in widget.loginStep.ui.pinErrorLabel.text
         assert widget.sessionManager.session is None, "Failed login created a session"
@@ -200,21 +220,22 @@ def run() -> None:  # noqa: PLR0915
                 assert time.monotonic() < deadline, "Disclaimer did not become ready within 10s"
                 if dialog is None or dialog.objectName != "disclaimerDialog":
                     return
-                agree = next(
+                agree_button = next(
                     button
                     for button in slicer.util.findChildren(dialog)
                     if isinstance(button, qt.QPushButton) and button.text == "Agree"
                 )
                 if not dialog_state["seen"]:
-                    assert not agree.isEnabled(), "Agree was enabled before scrolling"
+                    assert not agree_button.isEnabled(), "Agree was enabled before scrolling"
                     dialog_state["seen"] = True
                     entry["disclaimer_screenshot"] = screenshot("disclaimer")
-                    scroll = dialog.findChild(qt.QScrollArea, "appPopupScroll").verticalScrollBar()
-                    scroll.setValue(scroll.maximum)
+                    scroll_area = dialog.findChild(qt.QScrollArea, "appPopupScroll")
+                    scroll_bar = scroll_area.verticalScrollBar()
+                    scroll_bar.setValue(scroll_bar.maximum)
                     return
-                assert agree.isEnabled(), "Agree did not become enabled after scrolling"
+                assert agree_button.isEnabled(), "Agree did not become enabled after scrolling"
                 timer.stop()
-                agree.click()
+                agree_button.click()
                 dialog_state["agreed"] = True
             except Exception:
                 dialog_state["error"] = traceback.format_exc()
@@ -231,143 +252,167 @@ def run() -> None:  # noqa: PLR0915
         assert not dialog_state["error"], dialog_state["error"]
         assert dialog_state["seen"], "Disclaimer was not shown"
         assert dialog_state["agreed"], "Disclaimer was not accepted through its button"
-        assert widget.sessionManager.session.username == ui_fixtures.SURGEON.username
+        assert widget.sessionManager.session.username == ui_fixtures.FIXTURE_SURGEON.username
         expect_page(widget, widget.workflow_page)
-        assert ui_fixtures.DISABLED_CALLS["camera_start"] > 0, "Camera start did not pass through the safety fixture"
+        assert ui_fixtures.DISABLED_START_CALLS["camera_start"] > 0, (
+            "Camera start did not pass through the safety fixture"
+        )
         assert widget.cameraWorker._camera is None, "Native camera was unexpectedly initialized"
 
     with check("intraop-navigation-and-scan-gate"):
-        starts = slicer.util.findChildren(widget.workflow_page, name="wfStartButton")
-        click(next(button for button in starts if button.property("accent") == "blue"))
-        expect_page(widget, widget.levelSelectionWidget)
+        workflow_buttons = slicer.util.findChildren(widget.workflow_page, name="wfStartButton")
+        intraop_button = next(button for button in workflow_buttons if button.property("accent") == "blue")
+        click_to_page(widget, intraop_button, widget.levelSelectionWidget)
         assert widget._activeWorkflowId == "intraop"
         assert len(widget._stepHeaders) == 5
-        click(widget._stepHeaders[0].nextButton)
-        expect_page(widget, widget.verificationWidget)
-        click(widget._stepHeaders[1].nextButton)
-        expect_page(widget, widget.scanPatientWidget)
-        assert not widget._stepHeaders[2].nextButton.isEnabled(), "Plan is available without a registered CT"
-        widget._stepHeaders[2].nextButton.click()
-        expect_page(widget, widget.scanPatientWidget)
+        level_header, verification_header, scan_header, plan_header, navigate_header = widget._stepHeaders
+
+        click_to_page(widget, level_header.nextButton, widget.verificationWidget)
+        click_to_page(widget, verification_header.nextButton, widget.scanPatientWidget)
+        expect_forward_blocked(
+            widget, scan_header.nextButton, widget.scanPatientWidget, "Plan is available without a registered CT"
+        )
 
     with check("plan-preview-synthetic-render") as entry:
         entry["scope"] = "Direct page preview, not a clinical workflow; Scan Patient gate remains unmodified"
-        source = vtk.vtkRTAnalyticSource()
-        source.SetWholeExtent(0, 48, 0, 48, 0, 48)
-        source.SetCenter(24, 24, 24)
-        source.Update()
-        volume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", "VerificationSyntheticCT")
-        volume.SetOrigin(-24, -24, -24)
-        volume.SetAndObserveImageData(source.GetOutput())
-        volume.CreateDefaultDisplayNodes()
-        volume.GetDisplayNode().AutoWindowLevelOff()
-        volume.GetDisplayNode().SetWindowLevel(250, 125)
+
+        # Generate a volume with a known scalar range and no patient data.
+        volume_source = vtk.vtkRTAnalyticSource()
+        volume_source.SetWholeExtent(0, 48, 0, 48, 0, 48)
+        volume_source.SetCenter(24, 24, 24)
+        volume_source.Update()
+        synthetic_volume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", "VerificationSyntheticCT")
+        synthetic_volume.SetOrigin(-24, -24, -24)
+        synthetic_volume.SetAndObserveImageData(volume_source.GetOutput())
+        synthetic_volume.CreateDefaultDisplayNodes()
+        volume_display = synthetic_volume.GetDisplayNode()
+        volume_display.AutoWindowLevelOff()
+        volume_display.SetWindowLevel(250, 125)
+
         # Page preview is explicit: never weaken canAdvance() to get past the
         # registration gate. Exercise Plan's real onEnter and MRML view setup.
         widget._switchToPage(widget._planIndex)
         expect_page(widget, widget.planWidget)
-        plan = widget.planStep
-        assert plan.viewsCreated, "Plan's independent views were not created"
-        assert len(plan.mrmlWidgets) == 4, "Plan did not create all four views"
-        assert plan.loaded_volume_node == volume, "Plan did not pick up the synthetic volume"
+        plan_step = widget.planStep
+        assert plan_step.viewsCreated, "Plan's independent views were not created"
+        assert len(plan_step.mrmlWidgets) == 4, "Plan did not create all four views"
+        assert plan_step.loaded_volume_node == synthetic_volume, "Plan did not pick up the synthetic volume"
+
         # Plan schedules a second CT camera setup after 500 ms. Drain that
         # documented delayed work before framing the synthetic model as well.
         camera_ready_at = time.monotonic() + 0.75
         wait_for(lambda: time.monotonic() >= camera_ready_at, "Plan's deferred camera setup")
         for frame in ("frame_axial", "frame_sagittal", "frame_coronal"):
-            composite = plan.mrmlWidgets[frame].sliceLogic().GetSliceCompositeNode()
-            assert composite.GetBackgroundVolumeID(), f"No volume displayed in {frame}"
-        sphere = vtk.vtkSphereSource()
-        sphere.SetRadius(12)
-        sphere.SetCenter(70, 0, 0)  # Outside the opaque volume, so both must render.
-        sphere.Update()
-        model = slicer.modules.models.logic().AddModel(sphere.GetOutputPort())
-        model.SetName("VerificationSyntheticSphere")
-        model.GetDisplayNode().SetColor(0.9, 0.2, 0.1)
-        model.GetDisplayNode().SetViewNodeIDs([plan._threeDViewNode.GetID()])
-        view = plan._threeDWidget.threeDView()
+            slice_logic = plan_step.mrmlWidgets[frame].sliceLogic()
+            composite_node = slice_logic.GetSliceCompositeNode()
+            assert composite_node.GetBackgroundVolumeID(), f"No volume displayed in {frame}"
+
+        # Place the sphere outside the opaque volume so both objects are visible.
+        sphere_source = vtk.vtkSphereSource()
+        sphere_source.SetRadius(12)
+        sphere_source.SetCenter(70, 0, 0)
+        sphere_source.Update()
+        sphere_model = slicer.modules.models.logic().AddModel(sphere_source.GetOutputPort())
+        sphere_model.SetName("VerificationSyntheticSphere")
+        sphere_display = sphere_model.GetDisplayNode()
+        sphere_display.SetColor(0.9, 0.2, 0.1)
+        sphere_display.SetViewNodeIDs([plan_step._threeDViewNode.GetID()])
+
+        three_d_view = plan_step._threeDWidget.threeDView()
         slicer.app.processEvents()
-        window = view.renderWindow()
-        window.GetRenderers().GetFirstRenderer().ResetCamera()
-        plan.fitSlicesToWindow()
+        render_window = three_d_view.renderWindow()
+        render_window.GetRenderers().GetFirstRenderer().ResetCamera()
+        plan_step.fitSlicesToWindow()
         slicer.app.processEvents()
+
         # Qt owns vtkGenericOpenGLRenderWindow's context. Its SupportsOpenGL()
         # flag is unset in this build even with a valid context; verify pixels.
-        view.forceRender()
+        three_d_view.forceRender()
         slicer.app.processEvents()
-        capture = vtk.vtkWindowToImageFilter()
-        capture.SetInput(window)
-        capture.ReadFrontBufferOff()
-        capture.Update()
-        image = capture.GetOutput()
-        pixels = vtk_to_numpy(image.GetPointData().GetScalars())
-        assert image.GetDimensions()[0] > 100, "3D render is too narrow"
-        assert image.GetDimensions()[1] > 100, "3D render is too short"
+        window_capture = vtk.vtkWindowToImageFilter()
+        window_capture.SetInput(render_window)
+        window_capture.ReadFrontBufferOff()
+        window_capture.Update()
+        rendered_image = window_capture.GetOutput()
+
+        # Check image size, variation, and evidence of each synthetic object.
+        render_width, render_height, _depth = rendered_image.GetDimensions()
+        pixels = vtk_to_numpy(rendered_image.GetPointData().GetScalars())
+        assert render_width > 100, "3D render is too narrow"
+        assert render_height > 100, "3D render is too short"
         assert np.std(pixels) > 2, "3D render is blank"
-        red_pixels = int(np.count_nonzero((pixels[:, 0] > pixels[:, 1] * 1.5) & (pixels[:, 0] > 100)))
-        gray_pixels = int(np.count_nonzero((np.ptp(pixels, axis=1) < 3) & (pixels[:, 0] > 50)))
-        entry["red_pixels"] = red_pixels
-        entry["gray_pixels"] = gray_pixels
-        assert red_pixels > 100, f"Sphere not rendered ({red_pixels} red pixels)"
-        assert gray_pixels > 100, f"Synthetic volume not rendered ({gray_pixels} gray pixels)"
-        writer = vtk.vtkPNGWriter()
-        writer.SetFileName(str(OUTPUT / "synthetic-3d.png"))
-        writer.SetInputData(image)
-        writer.Write()
+
+        red_channel = pixels[:, 0]
+        green_channel = pixels[:, 1]
+        sphere_pixel_mask = (red_channel > green_channel * 1.5) & (red_channel > 100)
+        volume_pixel_mask = (np.ptp(pixels, axis=1) < 3) & (red_channel > 50)
+        red_pixel_count = int(np.count_nonzero(sphere_pixel_mask))
+        gray_pixel_count = int(np.count_nonzero(volume_pixel_mask))
+        entry["red_pixels"] = red_pixel_count
+        entry["gray_pixels"] = gray_pixel_count
+        assert red_pixel_count > 100, f"Sphere not rendered ({red_pixel_count} red pixels)"
+        assert gray_pixel_count > 100, f"Synthetic volume not rendered ({gray_pixel_count} gray pixels)"
+
+        png_writer = vtk.vtkPNGWriter()
+        png_writer.SetFileName(str(OUTPUT_DIR / "synthetic-3d.png"))
+        png_writer.SetInputData(rendered_image)
+        png_writer.Write()
         entry["render_screenshot"] = "synthetic-3d.png"
-        REPORT["runtime"]["opengl_capabilities"] = window.ReportCapabilities()
-        plan_view_id = plan._threeDViewNode.GetID()
+        SCENARIO_REPORT["runtime"]["opengl_capabilities"] = render_window.ReportCapabilities()
+        plan_view_id = plan_step._threeDViewNode.GetID()
 
     with check("navigate-preview-and-independent-views") as entry:
         entry["scope"] = "Direct preview following Plan; no registration or navigation accuracy claim"
-        click(widget._stepHeaders[3].nextButton)
-        expect_page(widget, widget.navigateWidget)
+        click_to_page(widget, plan_header.nextButton, widget.navigateWidget)
         assert widget.navigateStep.viewsCreated
         assert len(widget.navigateStep.mrmlWidgets) == 4
         assert widget.navigateStep._threeDViewNode.GetID() != plan_view_id, "Navigate reused Plan's view node"
-        assert not widget._stepHeaders[4].nextButton.isVisible(), "Last step still has a forward button"
+        assert not navigate_header.nextButton.isVisible(), "Last step still has a forward button"
         screenshot("navigate-preview-page")
-        click(widget._stepHeaders[4].homeButton)
+        # Home constructs a new Welcome page, so look it up after the click.
+        click(navigate_header.homeButton)
         expect_page(widget, widget.workflow_page)
         assert widget._activeWorkflowId == "", "Home did not end the workflow"
         assert slicer.mrmlScene.GetFirstNodeByName("VerificationSyntheticCT") is None, "Session data was not cleared"
 
     with check("fluoroscopy-navigation-and-capture-gate"):
-        starts = slicer.util.findChildren(widget.workflow_page, name="wfStartButton")
-        click(next(button for button in starts if button.property("accent") == "purple"))
-        expect_page(widget, widget.levelSelectionWidget)
+        workflow_buttons = slicer.util.findChildren(widget.workflow_page, name="wfStartButton")
+        fluoro_button = next(button for button in workflow_buttons if button.property("accent") == "purple")
+        click_to_page(widget, fluoro_button, widget.levelSelectionWidget)
         assert widget._activeWorkflowId == "fluoroscopy"
         assert len(widget._stepHeaders) == 4
-        click(widget._stepHeaders[0].nextButton)
-        expect_page(widget, widget.verificationWidget)
-        click(widget._stepHeaders[1].nextButton)
-        expect_page(widget, widget.fluoroCaptureWidget)
-        assert not widget._stepHeaders[2].nextButton.isEnabled(), "Navigate is available without assigned captures"
-        widget._stepHeaders[2].nextButton.click()
-        expect_page(widget, widget.fluoroCaptureWidget)
+        level_header, verification_header, capture_header, _navigate_header = widget._stepHeaders
+
+        click_to_page(widget, level_header.nextButton, widget.verificationWidget)
+        click_to_page(widget, verification_header.nextButton, widget.fluoroCaptureWidget)
+        expect_forward_blocked(
+            widget,
+            capture_header.nextButton,
+            widget.fluoroCaptureWidget,
+            "Navigate is available without assigned captures",
+        )
         screenshot("fluoroscopy-capture-page")
-        click(widget._stepHeaders[2].homeButton)
+        click(capture_header.homeButton)
         expect_page(widget, widget.workflow_page)
 
     with check("logout-and-safety-invariants") as entry:
-        click(widget.workflow_page.header.logoutButton)
-        expect_page(widget, widget.splashWidget)
+        click_to_page(widget, widget.workflow_page.header.logoutButton, widget.splashWidget)
         assert widget.sessionManager.session is None, "Logout left a session active"
         assert widget.loginStep.ui.pinInput.text == "", "Logout retained the PIN"
         assert widget.cameraWorker._camera is None
-        assert not list(SANDBOX.rglob("*.db")), "Verification unexpectedly created a database"
+        assert not list(SANDBOX_DIR.rglob("*.db")), "Verification unexpectedly created a database"
         assert not getattr(slicer, "dicomDatabase", None), "Verification initialized DICOM storage"
-        assert not ui_fixtures.CALLBACK_ERRORS, "\n".join(ui_fixtures.CALLBACK_ERRORS)
-        assert not ui_fixtures.LOG_ERRORS, "\n".join(ui_fixtures.LOG_ERRORS)
-        entry["disabled_calls"] = dict(ui_fixtures.DISABLED_CALLS)
-    REPORT["completed"] = True
+        assert not ui_fixtures.PYTHON_CALLBACK_ERRORS, "\n".join(ui_fixtures.PYTHON_CALLBACK_ERRORS)
+        assert not ui_fixtures.APPLICATION_LOG_ERRORS, "\n".join(ui_fixtures.APPLICATION_LOG_ERRORS)
+        entry["disabled_calls"] = dict(ui_fixtures.DISABLED_START_CALLS)
+    SCENARIO_REPORT["completed"] = True
     save_report()
 
 
 try:
     run()
 except Exception:
-    REPORT["error"] = traceback.format_exc()
+    SCENARIO_REPORT["error"] = traceback.format_exc()
     traceback.print_exc()
     save_report()
     # Slicer --testing exits nonzero when the Python script raises.
