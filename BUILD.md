@@ -118,6 +118,32 @@ Quick runtime validation:
 build/python-install/bin/PythonSlicer -c "import cv2, numpy; print(cv2.__version__); print(numpy.__version__)"
 ```
 
+## DICOM receiver on port 104 (DCMTK)
+
+DCMTK's `storescp` refuses any port below 1024 unless it runs as root (a
+`geteuid()` check in the tool itself), so `net.ipv4.ip_unprivileged_port_start`
+or `setcap` alone do not let the DICOM receiver listen on port 104.
+`AksaratorApp_DCMTK_ALLOW_PRIVILEGED_PORTS=ON` (the default) builds DCMTK with
+`DISABLE_PORT_PERMISSION_CHECK`, through DCMTK's `CMAKE_PROJECT_DCMTK_INCLUDE`
+hook (`SuperBuild/DCMTKDisablePortPermissionCheck.cmake`); the operating system
+then decides. On Linux the machine must still allow the port, persistently:
+
+```bash
+echo 'net.ipv4.ip_unprivileged_port_start=104' | sudo tee /etc/sysctl.d/60-aksarator-dicom.conf
+sudo sysctl --system
+```
+
+Windows has no such check. To rebuild only DCMTK after changing the option:
+
+```bash
+cmake build && cmake --build build --target DCMTK
+```
+
+Developers running stock Slicer (whose DCMTK keeps the check) can instead
+redirect port 104 to the receiver's 11112 with the extension's
+`tools/dicom_port_redirect.sh`. Do not use both on one machine: with the
+redirect installed, connections to 104 go to 11112, not to a receiver on 104.
+
 ## Build
 
 Note: The build process can take a few hours.
