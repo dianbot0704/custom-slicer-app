@@ -76,7 +76,7 @@ To clone the separate intraop planner extension repository into the expected
 To rebuild only the intraop planner extension's compiled runtime payload:
 
 ```bash
-cmake --build build/Slicer-build --target CompileTesModuleNuitkaModule
+cmake --build build/Slicer-build --target CompileIntraopPlannerNuitkaModule
 ```
 
 To verify the built app is loading the compiled intraop planner payload rather
