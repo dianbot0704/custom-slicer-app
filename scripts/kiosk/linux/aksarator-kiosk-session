@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# Run AksaratorApp as the only application of an X session, and start it
+# again whenever it exits. Installed as the Exec of aksarator-kiosk.desktop;
+# see README.md in this directory.
+#
+# Settings (environment, or /etc/aksarator/kiosk.conf, which is sourced):
+#   AKSARATOR_APP              App launcher. Default: /opt/AksaratorApp/AksaratorApp
+#   AKSARATOR_KIOSK_ON_EXIT    What a normal exit (status 0, such as the landing
+#                              page power button) does: restart (default),
+#                              poweroff, or logout.
+#   AKSARATOR_KIOSK_WM         Window manager command, "none" for no window
+#                              manager. Default: matchbox-window-manager if
+#                              installed, otherwise none.
+#   AKSARATOR_KIOSK_EXTRA_ARGS Extra application arguments, split on spaces.
+set -u
+
+CONFIG_FILE=/etc/aksarator/kiosk.conf
+if [[ -r "${CONFIG_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${CONFIG_FILE}"
+fi
+
+APP="${AKSARATOR_APP:-/opt/AksaratorApp/AksaratorApp}"
+ON_EXIT="${AKSARATOR_KIOSK_ON_EXIT:-restart}"
+STATE_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/aksarator-kiosk"
+LOG_FILE="${STATE_DIR}/session.log"
+LOG_MAX_BYTES=$((10 * 1024 * 1024))
+
+# A crash this soon after starting counts as a fast failure. After several in
+# a row, wait longer so a broken install does not restart in a tight loop.
+FAST_FAILURE_SECONDS=30
+FAST_FAILURE_LIMIT=5
+FAST_FAILURE_PAUSE_SECONDS=60
+
+mkdir -p "${STATE_DIR}"
+
+log() {
+  printf '%s aksarator-kiosk: %s\n' "$(date -Is)" "$*" >>"${LOG_FILE}"
+}
+
+rotate_log() {
+  if [[ -f "${LOG_FILE}" ]] && (($(stat -c %s "${LOG_FILE}") > LOG_MAX_BYTES)); then
+    mv -f "${LOG_FILE}" "${LOG_FILE}.1"
+  fi
+}
+
+# The launcher's process name is AksaratorApp; the application it starts is
+# AksaratorAppApp-real, which the kernel shortens to 15 characters.
+app_running() {
+  pgrep -u "$(id -u)" -x 'AksaratorApp|AksaratorAppApp' >/dev/null
+}
+
+if [[ ! -x "${APP}" ]]; then
+  log "application launcher not found or not executable: ${APP}"
+  exit 1
+fi
+
+# Keep the screen on.
+if command -v xset >/dev/null; then
+  xset s off
+  xset s noblank
+  xset -dpms
+fi
+
+WM="${AKSARATOR_KIOSK_WM:-}"
+if [[ -z "${WM}" ]] && command -v matchbox-window-manager >/dev/null; then
+  WM="matchbox-window-manager -use_titlebar no"
+fi
+if [[ -n "${WM}" && "${WM}" != "none" ]]; then
+  # shellcheck disable=SC2086 # WM is a command line.
+  ${WM} >>"${LOG_FILE}" 2>&1 &
+fi
+
+# shellcheck disable=SC2206 # Extra arguments are split on spaces on purpose.
+APP_ARGS=(--kiosk --ignore-slicerrc ${AKSARATOR_KIOSK_EXTRA_ARGS:-})
+export AKSARATOR_KIOSK=1
+
+fast_failures=0
+while true; do
+  rotate_log
+  started=$(date +%s)
+  log "starting ${APP} ${APP_ARGS[*]}"
+  "${APP}" "${APP_ARGS[@]}" >>"${LOG_FILE}" 2>&1
+  status=$?
+  log "application exited with status ${status}"
+
+  # Slicer restarts itself (Ctrl+R) by starting a new copy and exiting. Wait
+  # for that copy instead of starting a second one. Its exit status is not
+  # known here, so afterwards the application is simply started again.
+  if app_running; then
+    log "application restarted itself; waiting for it to exit"
+    while app_running; do
+      sleep 2
+    done
+    fast_failures=0
+    continue
+  fi
+
+  if ((status == 0)); then
+    fast_failures=0
+    case "${ON_EXIT}" in
+      poweroff)
+        log "normal exit; powering off"
+        systemctl poweroff
+        exit 0
+        ;;
+      logout)
+        log "normal exit; ending the session"
+        exit 0
+        ;;
+      *)
+        continue
+        ;;
+    esac
+  fi
+
+  if (($(date +%s) - started < FAST_FAILURE_SECONDS)); then
+    fast_failures=$((fast_failures + 1))
+  else
+    fast_failures=0
+  fi
+  if ((fast_failures >= FAST_FAILURE_LIMIT)); then
+    log "${fast_failures} fast failures in a row; waiting ${FAST_FAILURE_PAUSE_SECONDS}s"
+    sleep "${FAST_FAILURE_PAUSE_SECONDS}"
+    fast_failures=0
+  else
+    sleep 2
+  fi
+done

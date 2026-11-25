@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Aksarator Kiosk
+Comment=Run AksaratorApp as the only application, restarted when it exits
+Exec=/usr/local/bin/aksarator-kiosk-session
+DesktopNames=AksaratorKiosk
