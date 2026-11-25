@@ -20,9 +20,23 @@
 #include "qAksaratorAppMainWindow_p.h"
 
 // Qt includes
+#include <QAction>
+#include <QCloseEvent>
+#include <QCoreApplication>
+#include <QCryptographicHash>
+#include <QDebug>
 #include <QDesktopWidget>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QSettings>
+#include <QShortcut>
+#include <QShowEvent>
+#include <QStatusBar>
 #include <QTimer>
+#include <QToolBar>
 
 // Slicer includes
 #include "qSlicerApplication.h"
@@ -30,6 +44,16 @@
 #include "qSlicerMainWindow_p.h"
 #include "qSlicerModuleSelectorToolBar.h"
 #include "qMRMLWidget.h"
+
+namespace
+{
+const char KioskArgument[] = "--kiosk";
+const char KioskEnvironmentVariable[] = "AKSARATOR_KIOSK";
+// Optional settings, read from the user settings file.
+const char KioskUnlockShortcutSettingsKey[] = "Kiosk/UnlockShortcut";
+const char KioskUnlockPinSha256SettingsKey[] = "Kiosk/UnlockPinSha256";
+const char KioskDefaultUnlockShortcut[] = "Ctrl+Alt+Shift+K";
+} // end of anonymous namespace
 
 //-----------------------------------------------------------------------------
 // qAksaratorAppMainWindowPrivate methods
@@ -50,8 +74,14 @@ void qAksaratorAppMainWindowPrivate::init()
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
   QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
-  Q_Q(qAksaratorAppMainWindow);
   this->Superclass::init();
+
+  // Lock before the window is first shown, so it opens fullscreen and the
+  // Slicer menus and toolbars never flash on screen.
+  if (qAksaratorAppMainWindow::isKioskModeRequested())
+    {
+    this->setKioskMode(true);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -114,6 +144,110 @@ void qAksaratorAppMainWindowPrivate::setupUi(QMainWindow * mainWindow)
 }
 
 //-----------------------------------------------------------------------------
+void qAksaratorAppMainWindowPrivate::hideSlicerChrome()
+{
+  Q_Q(qAksaratorAppMainWindow);
+  q->menuBar()->hide();
+  q->statusBar()->hide();
+  for (QToolBar* toolBar : q->findChildren<QToolBar*>())
+    {
+    toolBar->hide();
+    }
+  for (QDockWidget* dockWidget : q->findChildren<QDockWidget*>())
+    {
+    if (dockWidget != this->PanelDockWidget)
+      {
+      dockWidget->hide();
+      }
+    }
+}
+
+//-----------------------------------------------------------------------------
+void qAksaratorAppMainWindowPrivate::setKioskMode(bool enable)
+{
+  Q_Q(qAksaratorAppMainWindow);
+  if (this->KioskMode == enable)
+    {
+    return;
+    }
+  this->KioskMode = enable;
+
+  if (enable)
+    {
+    // Slicer's own shortcuts open the Python console (Ctrl+3), the error log
+    // (Ctrl+0), the module finder (Ctrl+F), switch modules (Ctrl+Left/Right),
+    // hide the module panel (Ctrl+5) and trigger menu items. Only Slicer's
+    // actions exist this early; module widgets are created later and keep
+    // their shortcuts.
+    this->KioskSavedShortcuts.clear();
+    for (QAction* action : q->findChildren<QAction*>())
+      {
+      if (!action->shortcuts().isEmpty())
+        {
+        this->KioskSavedShortcuts.append(qMakePair(QPointer<QAction>(action), action->shortcuts()));
+        action->setShortcuts(QList<QKeySequence>());
+        }
+      }
+
+    this->hideSlicerChrome();
+    // The module panel holds the workflow: it must not be closed, moved or floated.
+    this->KioskSavedPanelFeatures = this->PanelDockWidget->features();
+    this->PanelDockWidget->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    // Dropping a file on the window would load it into the scene.
+    q->setAcceptDrops(false);
+
+    if (!this->KioskUnlockShortcut)
+      {
+      QSettings settings;
+      const QKeySequence unlockKeys(
+        settings.value(KioskUnlockShortcutSettingsKey, KioskDefaultUnlockShortcut).toString());
+      this->KioskUnlockShortcut = new QShortcut(unlockKeys, q);
+      QObject::connect(this->KioskUnlockShortcut, &QShortcut::activated,
+        q, &qAksaratorAppMainWindow::requestKioskUnlock);
+      }
+    this->KioskUnlockShortcut->setEnabled(true);
+
+    if (q->isVisible())
+      {
+      q->showFullScreen();
+      }
+    else
+      {
+      q->setWindowState(q->windowState() | Qt::WindowFullScreen);
+      }
+    qDebug() << "Kiosk mode enabled; unlock with" << this->KioskUnlockShortcut->key().toString();
+    }
+  else
+    {
+    for (const auto& savedShortcut : this->KioskSavedShortcuts)
+      {
+      if (savedShortcut.first)
+        {
+        savedShortcut.first->setShortcuts(savedShortcut.second);
+        }
+      }
+    this->KioskSavedShortcuts.clear();
+
+    this->PanelDockWidget->setFeatures(this->KioskSavedPanelFeatures);
+    q->setAcceptDrops(true);
+    if (this->KioskUnlockShortcut)
+      {
+      this->KioskUnlockShortcut->setEnabled(false);
+      }
+
+    // Bring back the toolbars and docks as they were before locking. A module
+    // that hides Slicer's UI itself (such as IntraopPlanner) may hide them again.
+    q->restoreState(this->StartupState);
+    q->menuBar()->show();
+    q->statusBar()->setVisible(this->ShowStatusBarAction->isChecked());
+    q->showMaximized();
+    qWarning() << "Kiosk mode unlocked for maintenance";
+    }
+
+  emit q->kioskModeChanged(enable);
+}
+
+//-----------------------------------------------------------------------------
 // qAksaratorAppMainWindow methods
 
 //-----------------------------------------------------------------------------
@@ -156,4 +290,122 @@ void qAksaratorAppMainWindow::on_HelpAboutAksaratorAppAction_triggered()
   qSlicerAboutDialog about(this);
   about.setLogo(QPixmap(":/Logo.png"));
   about.exec();
+}
+
+//-----------------------------------------------------------------------------
+bool qAksaratorAppMainWindow::isKioskMode() const
+{
+  Q_D(const qAksaratorAppMainWindow);
+  return d->KioskMode;
+}
+
+//-----------------------------------------------------------------------------
+bool qAksaratorAppMainWindow::isKioskModeRequested()
+{
+  // Slicer ignores the unknown --kiosk argument, and keeps it when it restarts
+  // itself, so a restarted application stays in kiosk mode.
+  if (QCoreApplication::arguments().contains(QLatin1String(KioskArgument)))
+    {
+    return true;
+    }
+  const QString value = qEnvironmentVariable(KioskEnvironmentVariable).trimmed().toLower();
+  return value == QLatin1String("1") || value == QLatin1String("true")
+    || value == QLatin1String("yes") || value == QLatin1String("on");
+}
+
+//-----------------------------------------------------------------------------
+void qAksaratorAppMainWindow::requestKioskUnlock()
+{
+  Q_D(qAksaratorAppMainWindow);
+  if (!d->KioskMode)
+    {
+    return;
+    }
+
+  const QString title = tr("Maintenance mode");
+  QSettings settings;
+  const QString expectedPinHash =
+    settings.value(KioskUnlockPinSha256SettingsKey).toString().trimmed().toLower();
+  if (expectedPinHash.isEmpty())
+    {
+    const QMessageBox::StandardButton answer = QMessageBox::question(this, title,
+      tr("Unlock the application for maintenance?\n\nRestart the application to lock it again."));
+    if (answer != QMessageBox::Yes)
+      {
+      return;
+      }
+    }
+  else
+    {
+    bool accepted = false;
+    const QString pin = QInputDialog::getText(this, title, tr("Maintenance PIN:"),
+      QLineEdit::Password, QString(), &accepted);
+    if (!accepted)
+      {
+      return;
+      }
+    const QString pinHash = QString::fromLatin1(
+      QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256).toHex());
+    if (pinHash != expectedPinHash)
+      {
+      qWarning() << "Kiosk unlock refused: wrong PIN";
+      QMessageBox::warning(this, title, tr("Wrong PIN."));
+      return;
+      }
+    }
+
+  d->setKioskMode(false);
+}
+
+//-----------------------------------------------------------------------------
+void qAksaratorAppMainWindow::closeEvent(QCloseEvent* event)
+{
+  Q_D(qAksaratorAppMainWindow);
+  // Alt+F4, the window manager's close button and File > Exit all end here.
+  // An exit the application asks for itself (slicer.app.exit(), restart)
+  // does not close the window first, so it still works.
+  if (d->KioskMode)
+    {
+    event->ignore();
+    return;
+    }
+  this->Superclass::closeEvent(event);
+}
+
+//-----------------------------------------------------------------------------
+void qAksaratorAppMainWindow::showEvent(QShowEvent* event)
+{
+  Q_D(qAksaratorAppMainWindow);
+  // With MainWindow/RestoreGeometry set, the Markups and Sequences modules
+  // restore the saved toolbar state when they load, after the window was
+  // locked. Hide Slicer's UI again here: Qt has shown the child widgets but
+  // has not put the window on screen yet.
+  if (d->KioskMode && !event->spontaneous())
+    {
+    d->hideSlicerChrome();
+    }
+  this->Superclass::showEvent(event);
+}
+
+//-----------------------------------------------------------------------------
+void qAksaratorAppMainWindow::changeEvent(QEvent* event)
+{
+  Q_D(qAksaratorAppMainWindow);
+  this->Superclass::changeEvent(event);
+  if (event->type() != QEvent::WindowStateChange || !d->KioskMode || !this->isVisible())
+    {
+    return;
+    }
+  if (!this->isFullScreen() || this->isMinimized())
+    {
+    // Something left fullscreen (F11, a window manager key, minimize).
+    // Go back on the next event loop turn, not inside the state change.
+    QTimer::singleShot(0, this, [this]()
+      {
+      if (this->isKioskMode() && (!this->isFullScreen() || this->isMinimized()))
+        {
+        this->showFullScreen();
+        }
+      });
+    }
 }
