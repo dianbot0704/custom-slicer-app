@@ -14,7 +14,7 @@ from pathlib import Path
 DEFAULT_BUILD_DIR = "build"
 DEFAULT_BUILD_TYPE = "Debug"
 DEFAULT_NUMPY_VERSION = "1.26.4"
-EXT_BUILD_TARGET = "CompileTesModuleNuitkaModule"
+EXT_BUILD_TARGET = "CompileIntraopPlannerNuitkaModule"
 INTRAOP_PLAN_EXTENSION_REPOSITORY = "git@github.com:dianbot0704/intraop-plan-extension.git"
 INTRAOP_PLAN_EXTENSION_DIR = Path("Extensions/intraop-plan-extension")
 

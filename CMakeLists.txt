@@ -66,6 +66,29 @@ option(
 mark_as_superbuild(AksaratorApp_NUITKA_VERSION:STRING)
 mark_as_superbuild(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR:BOOL)
 
+# DCMTK's storescp refuses ports below 1024 unless it runs as root, whatever the
+# OS allows; build it without that check so the DICOM receiver can listen on 104
+# (Linux also needs net.ipv4.ip_unprivileged_port_start <= 104 on the machine).
+# Slicer's External_DCMTK.cmake cannot be overridden from SuperBuild/, so the
+# define goes in through DCMTK's project() include hook. The value is always
+# passed (empty when OFF) so turning the option off also clears DCMTK's cache.
+option(
+  AksaratorApp_DCMTK_ALLOW_PRIVILEGED_PORTS
+  "Build DCMTK without its root-only check for ports below 1024 (DICOM receiver on port 104)"
+  ON
+  )
+set(CMAKE_PROJECT_DCMTK_INCLUDE "")
+if(AksaratorApp_DCMTK_ALLOW_PRIVILEGED_PORTS)
+  if(CTEST_USE_LAUNCHERS)
+    # Slicer then sets CMAKE_PROJECT_DCMTK_INCLUDE itself, after this one, and wins.
+    message(FATAL_ERROR
+      "AksaratorApp_DCMTK_ALLOW_PRIVILEGED_PORTS needs CTEST_USE_LAUNCHERS OFF "
+      "(both use DCMTK's CMAKE_PROJECT_DCMTK_INCLUDE).")
+  endif()
+  set(CMAKE_PROJECT_DCMTK_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/SuperBuild/DCMTKDisablePortPermissionCheck.cmake")
+endif()
+mark_as_superbuild(VARS CMAKE_PROJECT_DCMTK_INCLUDE:FILEPATH PROJECTS DCMTK)
+
 if(AksaratorApp_ENABLE_COMPILED_FIDUCIAL_DETECTOR)
   list(APPEND Slicer_ADDITIONAL_DEPENDENCIES python-nuitka)
 endif()
