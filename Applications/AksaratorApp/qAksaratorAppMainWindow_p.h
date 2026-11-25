@@ -21,8 +21,18 @@
 // AksaratorApp includes
 #include "qAksaratorAppMainWindow.h"
 
+// Qt includes
+#include <QDockWidget>
+#include <QKeySequence>
+#include <QList>
+#include <QPair>
+#include <QPointer>
+
 // Slicer includes
 #include "qSlicerMainWindow_p.h"
+
+class QAction;
+class QShortcut;
 
 //-----------------------------------------------------------------------------
 class Q_AKSARATOR_APP_EXPORT qAksaratorAppMainWindowPrivate
@@ -37,6 +47,16 @@ public:
   virtual void init();
   /// Reimplemented for custom behavior
   virtual void setupUi(QMainWindow * mainWindow);
+
+  /// Lock (fullscreen, no Slicer menus/toolbars/shortcuts, no closing) or unlock the window.
+  void setKioskMode(bool enable);
+  /// Hide Slicer's menu bar, status bar, toolbars and every dock except the module panel.
+  void hideSlicerChrome();
+
+  bool KioskMode{false};
+  QShortcut* KioskUnlockShortcut{nullptr};
+  QList<QPair<QPointer<QAction>, QList<QKeySequence>>> KioskSavedShortcuts;
+  QDockWidget::DockWidgetFeatures KioskSavedPanelFeatures;
 };
 
 #endif
